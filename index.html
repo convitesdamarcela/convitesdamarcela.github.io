@@ -1,82 +1,181 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Convites da Marcela</title>
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            background: #F4F4F4;
-            text-align: center;
-            margin: 0;
-            padding: 0;
-        }
-        .header {
-            background-color: #9d8bc0;
-            padding: 20px;
-            color: white;
-            font-size: 32px;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-        .header p {
-            font-size: 16px;
-        }
-        .buttons {
-            margin: 20px 0;
-        }
-        .buttons a {
-            display: block;
-            background-color: #9d8bc0;
-            color: white;
-            font-size: 18px;
-            padding: 15px;
-            margin: 10px;
-            text-decoration: none;
-            border-radius: 5px;
-            transition: background-color 0.3s ease;
-        }
-        .buttons a:hover {
-            background-color: #7f6fa1;
-        }
-        .logo {
-            margin: 20px;
-        }
-        .watermark {
-            position: fixed;
-            bottom: 10px;
-            left: 10px;
-            opacity: 0.1;
-            z-index: -1;
-        }
-        .watermark img {
-            width: 150px;
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Convites da Marcela</title>
+
+  <style>
+    :root{
+      --bg1:#f3eef9;
+      --bg2:#efe7f6;
+      --card:#ffffff;
+      --text:#2a2433;
+      --muted:#6a6276;
+      --p1:#6c2bd9;
+      --p2:#9d8bc0;
+      --stroke: rgba(125, 96, 170, .55);
+      --shadow: 0 18px 45px rgba(35, 22, 60, .18);
+      --radius: 26px;
+    }
+
+    *{ box-sizing: border-box; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Helvetica Neue";
+      color:var(--text);
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:32px 14px;
+      background: radial-gradient(1200px 700px at 50% 5%, var(--bg2), var(--bg1));
+      position:relative;
+      overflow-x:hidden;
+    }
+
+    /* MARCA D’ÁGUA (repetida no fundo inteiro) */
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      background-image: url("/assets/watermark.png");
+      background-repeat: repeat;
+      background-size: 180px auto;   /* ajuste o tamanho aqui */
+      opacity: .06;                 /* força da marca d’água */
+      pointer-events:none;
+      z-index:0;
+      filter: saturate(1.05);
+    }
+
+    .wrap{
+      width:min(520px, 92vw);
+      position:relative;
+      z-index:1;
+    }
+
+    .card{
+      background: rgba(255,255,255,.86);
+      backdrop-filter: blur(8px);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 26px 22px 22px;
+      border: 1px solid rgba(255,255,255,.55);
+    }
+
+    .top{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:10px;
+      text-align:center;
+      margin-bottom: 16px;
+    }
+
+    .logo{
+      width: 160px;
+      height:auto;
+      display:block;
+      margin: 4px auto 6px;
+    }
+
+    h1{
+      margin:0;
+      font-size: 34px;
+      line-height:1.05;
+      letter-spacing:-.6px;
+    }
+    .subtitle{
+      margin:0;
+      color:var(--muted);
+      font-size: 15px;
+    }
+
+    .hint{
+      margin: 14px 0 18px;
+      padding: 10px 14px;
+      border: 1px dashed rgba(125,96,170,.45);
+      border-radius: 14px;
+      color: var(--muted);
+      font-size: 13.5px;
+      background: rgba(255,255,255,.55);
+    }
+
+    .btns{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      margin-top: 8px;
+    }
+
+    /* TODOS os botões no MESMO estilo */
+    .btn{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      width:100%;
+      padding: 16px 18px;
+      border-radius: 999px;
+      text-decoration:none;
+      font-weight: 700;
+      letter-spacing: .2px;
+      border: 1.5px solid var(--stroke);
+      background: rgba(255,255,255,.88);
+      color: #5a2bb6;
+      box-shadow: 0 10px 22px rgba(35,22,60,.10);
+      transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
+    }
+
+    .btn.primary{
+      background: linear-gradient(90deg, var(--p1), var(--p2));
+      color: #fff;
+      border: none;
+      box-shadow: 0 16px 30px rgba(108,43,217,.22);
+    }
+
+    .btn:hover{
+      transform: translateY(-1px);
+      box-shadow: 0 18px 34px rgba(35,22,60,.16);
+    }
+    .btn.primary:hover{
+      box-shadow: 0 18px 36px rgba(108,43,217,.30);
+    }
+
+    .foot{
+      text-align:center;
+      margin-top: 12px;
+      font-size: 12.5px;
+      color: rgba(90,80,110,.85);
+    }
+  </style>
 </head>
+
 <body>
+  <main class="wrap">
+    <section class="card">
+      <div class="top">
+        <!-- LOGO (não quebra em subpastas) -->
+        <img class="logo" src="/assets/logo.png" alt="Convites da Marcela" />
+        <h1>Convites da Marcela</h1>
+        <p class="subtitle">Um convite, mil lembranças ✨</p>
+      </div>
 
-    <div class="header">
-        <div class="logo">
-            <img src="assets/logo.png" alt="Logo Convites da Marcela" width="250">
-        </div>
-        <p>Um convite, mil lembranças ✨</p>
-    </div>
+      <div class="hint">Escolha o que você quer: convite, moldura, retrospectiva ou música personalizada 💜</div>
 
-    <div class="buttons">
-        <a href="convites-infantis.html">🎈 Convites Infantis</a>
-        <a href="convites-15-anos.html">👑 Convites 15 Anos</a>
-        <a href="moldura-de-fotos.html">🖼 Moldura de Fotos</a>
-        <a href="retrospectiva.html">🎥 Retrospectiva</a>
-        <a href="musica-personalizada.html">🎶 Música Personalizada</a>
-        <a href="mascotinhos.html">🐻 Mascotinhos</a>
-    </div>
+      <nav class="btns">
+        <a class="btn primary" href="/convites-infantis/">🎈 Convites Infantis</a>
+        <a class="btn primary" href="/convites-15anos/">👑 Convites 15 Anos</a>
 
-    <div class="watermark">
-        <img src="assets/marca-dagua.png" alt="Marca d'água" />
-    </div>
+        <a class="btn" href="/moldura-de-fotos/">🖼️ Moldura de Fotos</a>
+        <a class="btn" href="/retrospectiva/">🎬 Retrospectiva</a>
+        <a class="btn" href="/musica-personalizada/">🎶 Música Personalizada</a>
+        <a class="btn" href="/mascotinhos/">🧸 Mascotinhos</a>
+      </nav>
 
+      <div class="foot">© Convites da Marcela</div>
+    </section>
+  </main>
 </body>
 </html>
 
