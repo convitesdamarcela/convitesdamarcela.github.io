@@ -1,180 +1,108 @@
-<!doctype html>
-<html lang="pt-br">
+<!DOCTYPE html>
+<html lang="pt-BR">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="UTF-8" />
   <title>Convites da Marcela</title>
 
   <style>
-    /* ====== PALETA (sua marca) ====== */
-    :root{
-      --bg:#f3eef6;            /* fundo lilás clarinho */
-      --card:#ffffff;          /* cards brancos */
-      --text:#222222;          /* texto */
-      --muted:#6f6a7a;         /* texto leve */
-
-      --brand:#682c8f;         /* lilás principal */
-      --brand2:#9d8bc0;        /* lilás claro */
-      --accent:#FFA7DD;        /* nude/rosé */
-
-      --shadow: 0 14px 40px rgba(104,44,143,.18);
-      --radius: 20px;
+    :root {
+      --lilas: #9d8bc0;
+      --lilas-claro: #e9e3f3;
+      --roxo: #682cbf;
+      --branco: #ffffff;
+      --texto: #2b2b2b;
     }
 
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      background:
-        radial-gradient(900px 600px at 12% 0%, rgba(255,167,221,.22), transparent 60%),
-        radial-gradient(900px 500px at 88% 12%, rgba(157,139,192,.25), transparent 55%),
-        var(--bg);
-      color:var(--text);
-      min-height:100vh;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:28px 16px;
-      position:relative;
-      overflow-x:hidden;
+    * {
+      box-sizing: border-box;
+      font-family: "Poppins", Arial, sans-serif;
     }
 
-    /* ====== MARCA D’ÁGUA (logo secundária repetida) ====== */
-    body::before{
-      content:"";
-      position:fixed;
-      inset:0;
-      background-image:url("assets/watermark.png");
-      background-repeat:repeat;
-      background-size:120px;   /* tamanho das marcas */
-      opacity:0.05;            /* 0.04 bem discreto / 0.07 mais visível */
-      pointer-events:none;
-      z-index:-1;
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background-color: var(--lilas-claro);
+      background-image: url("assets/watermark.png");
+      background-repeat: repeat;
+      background-size: 180px;
+      background-opacity: 0.05;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
 
-    .wrap{
-      width:min(560px, 100%);
-      text-align:center;
+    .container {
+      background: var(--branco);
+      width: 100%;
+      max-width: 420px;
+      padding: 30px 22px;
+      border-radius: 28px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+      text-align: center;
     }
 
-    .header{
-      background: rgba(255,255,255,.55);
-      border: 1px solid rgba(104,44,143,.10);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 22px 18px 18px;
-      backdrop-filter: blur(10px);
+    .logo {
+      width: 140px;
+      margin-bottom: 12px;
     }
 
-    .logo{
-      width:190px;
-      height:190px;
-      border-radius:50%;
-      object-fit:cover;
-      box-shadow: var(--shadow);
-      border: 8px solid rgba(255,255,255,.80);
-      background:#fff;
+    h1 {
+      margin: 10px 0 4px;
+      font-size: 26px;
+      color: var(--texto);
     }
 
-    h1{
-      margin:16px 0 6px;
-      font-size:40px;
-      line-height:1.05;
-      letter-spacing:.2px;
-      color:#2a2034;
+    .sub {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 22px;
     }
 
-    .tagline{
-      margin:0;
-      font-size:16px;
-      color:var(--muted);
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 16px;
+      margin: 10px 0;
+      border-radius: 40px;
+      border: none;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
     }
 
-    .grid{
-      margin-top:16px;
-      display:grid;
-      gap:12px;
+    .btn.primary {
+      background: linear-gradient(90deg, var(--roxo), var(--lilas));
+      color: white;
     }
 
-    .btn{
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      gap:10px;
-      padding:16px 18px;
-      border-radius:999px;
-      text-decoration:none;
-      font-weight:800;
-      font-size:17px;
-      transition: transform .12s ease, opacity .12s ease;
-      user-select:none;
-    }
-    .btn:hover{transform: translateY(-1px);opacity:.97}
-
-    .primary{
-      color:#fff;
-      background: linear-gradient(135deg, var(--brand), var(--brand2));
-      box-shadow: 0 12px 26px rgba(104,44,143,.18);
-      border:none;
-    }
-
-    .ghost{
-      color:var(--brand);
-      background: rgba(255,255,255,.80);
-      border:2px solid rgba(157,139,192,.45);
-      box-shadow: 0 10px 22px rgba(104,44,143,.10);
-    }
-
-    .mini{
-      margin-top:16px;
-      font-size:12.5px;
-      color:rgba(111,106,122,.85);
-    }
-
-    .hint{
-      margin-top:10px;
-      font-size:12.5px;
-      color:rgba(111,106,122,.90);
-      background: rgba(255,255,255,.65);
-      border: 1px dashed rgba(104,44,143,.18);
-      padding:10px 12px;
-      border-radius: 14px;
+    .btn.secondary {
+      background: white;
+      color: var(--roxo);
+      border: 2px solid var(--lilas);
     }
   </style>
 </head>
 
 <body>
-  <main class="wrap">
-    <section class="header">
-      <!-- ✅ SUA LOGO REDONDA (mascote) -->
-      <img class="logo" src="assets/logo.png" alt="Convites da Marcela" />
+  <div class="container">
 
-      <h1>Convites da<br>Marcela</h1>
-      <p class="tagline">Um convite, mil lembranças ✨</p>
+    <!-- LOGO -->
+    <img src="assets/logo.png" alt="Convites da Marcela" class="logo">
 
-      <div class="hint">
-        Escolha o que você quer: convite, moldura, retrospectiva ou música personalizada 💜
-      </div>
-    </section>
+    <h1>Convites da Marcela</h1>
+    <p class="sub">Um convite, mil lembranças ✨</p>
 
-    <section class="grid">
-      <!-- Convites -->
-      <a class="btn primary" href="/convites-infantis/">🎈 Convites Infantis</a>
-      <a class="btn primary" href="/convites-15anos/">👑 Convites 15 Anos</a>
+    <!-- BOTÕES -->
+    <a href="#" class="btn primary">🎈 Convites Infantis</a>
+    <a href="#" class="btn primary">👑 Convites 15 Anos</a>
 
-      <!-- Serviços -->
-      <a class="btn ghost" href="/moldura-de-fotos/">🖼️ Moldura de Fotos</a>
-      <a class="btn ghost" href="/retrospectiva/">🎬 Retrospectiva</a>
-      <a class="btn ghost" href="/musica-personalizada/">🎶 Música Personalizada</a>
-      <a class="btn ghost" href="/mascotinhos/">🧸 Mascotinhos</a>
+    <a href="#" class="btn secondary">🖼️ Moldura de Fotos</a>
+    <a href="#" class="btn secondary">🎞️ Retrospectiva</a>
+    <a href="#" class="btn secondary">🎵 Música Personalizada</a>
+    <a href="#" class="btn secondary">🧸 Mascotinhos</a>
 
-      <!-- Contato (troque seu número) -->
-      <a class="btn primary" href="https://wa.me/55SEUNUMEROAQUI" target="_blank" rel="noopener">
-        💬 Falar no WhatsApp
-      </a>
-    </section>
-
-    <p class="mini">© Convites da Marcela • um convite, mil lembranças</p>
-  </main>
+  </div>
 </body>
 </html>
+
