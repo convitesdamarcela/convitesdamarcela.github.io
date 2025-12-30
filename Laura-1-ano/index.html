@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Câmera HD PRO – Frontal & Traseira</title>
+<title>Câmera Foto & Vídeo</title>
 
 <style>
 *{box-sizing:border-box}
@@ -28,7 +28,7 @@ video,canvas,img{
 }
 #camera{object-fit:cover}
 #camera.mirrored{transform:scaleX(-1)}
-#canvasPreview{object-fit:contain;display:none;z-index:5}
+#canvasPreview{object-fit:contain;display:none;z-index:5;background:#000}
 #molduraImagePreview{object-fit:cover;pointer-events:none;z-index:6}
 
 .controls{
@@ -37,16 +37,25 @@ video,canvas,img{
   width:100%;
   display:flex;
   justify-content:center;
-  gap:10px;
+  gap:12px;
   z-index:10;
-  flex-wrap:wrap;
 }
-button,select{
-  padding:12px 16px;
+button{
+  padding:14px 18px;
   border-radius:30px;
   border:none;
   font-size:14px;
   cursor:pointer;
+}
+
+.resultBar{
+  position:absolute;
+  bottom:90px;
+  width:100%;
+  display:none;
+  justify-content:center;
+  gap:12px;
+  z-index:20;
 }
 </style>
 </head>
@@ -60,20 +69,15 @@ button,select{
   <img id="molduraImagePreview" src="moldura1.png">
 </div>
 
+<div class="resultBar" id="resultBar">
+  <button onclick="downloadFile()">📥 Baixar</button>
+  <button onclick="resetCamera()">🔄 Nova</button>
+</div>
+
 <div class="controls">
   <button onclick="switchCamera()">🔄 Câmera</button>
-
-  <select id="modeSelect">
-    <option value="light">🧠 Modo Leve</option>
-    <option value="pro">🚀 Modo Pro</option>
-  </select>
-
-  <select id="formatSelect">
-    <option value="png">PNG</option>
-    <option value="jpeg">JPEG</option>
-  </select>
-
   <button onclick="takePhoto()">📸 Foto</button>
+  <button onclick="startStopVideo()">🎥 Vídeo</button>
 </div>
 
 <script>
@@ -81,6 +85,7 @@ const video = document.getElementById('camera');
 const canvasFinal = document.getElementById('canvasFinal');
 const canvasPreview = document.getElementById('canvasPreview');
 const moldura = document.getElementById('molduraImagePreview');
+const resultBar = document.getElementById('resultBar');
 
 const ctxFinal = canvasFinal.getContext('2d');
 const ctxPreview = canvasPreview.getContext('2d');
@@ -92,8 +97,11 @@ ctxPreview.imageSmoothingQuality = 'high';
 
 let stream = null;
 let usingFrontCamera = true;
+let lastBlob = null;
+let recording = false;
+let mediaRecorder;
+let chunks = [];
 
-// 🎥 INIT CAMERA
 async function initCamera(){
   if(stream) stream.getTracks().forEach(t=>t.stop());
 
@@ -104,83 +112,111 @@ async function initCamera(){
       height:{ideal:1080},
       frameRate:{ideal:30}
     },
-    audio:false
+    audio:true
   });
 
   video.srcObject = stream;
-  video.setAttribute('playsinline', true);
   video.classList.toggle('mirrored', usingFrontCamera);
-
-  video.onloadedmetadata = () => {
-    video.play();
-    console.log('Câmera:', usingFrontCamera?'Frontal':'Traseira',
-      video.videoWidth, video.videoHeight);
-  };
+  video.setAttribute('playsinline', true);
+  await video.play();
 }
 initCamera();
 
-// 🔄 SWITCH CAMERA
 async function switchCamera(){
   usingFrontCamera = !usingFrontCamera;
   await initCamera();
 }
 
-// 📸 FOTO
 function takePhoto(){
-  const mode = modeSelect.value;
-  const format = formatSelect.value;
+  video.style.display = 'none';
 
   canvasFinal.width = 1080;
   canvasFinal.height = 1920;
   drawVideo(ctxFinal,1080,1920);
   drawMoldura(ctxFinal,1080,1920);
 
-  if(mode==='light'){
-    canvasPreview.width = 540;
-    canvasPreview.height = 960;
-  }else{
-    canvasPreview.width = 1080;
-    canvasPreview.height = 1920;
-  }
-  ctxPreview.drawImage(canvasFinal,0,0,canvasPreview.width,canvasPreview.height);
-  canvasPreview.style.display='block';
-
-  const type = format==='png'?'image/png':'image/jpeg';
-  const quality = format==='jpeg'?0.95:1;
+  canvasPreview.width = 540;
+  canvasPreview.height = 960;
+  ctxPreview.drawImage(canvasFinal,0,0,540,960);
+  canvasPreview.style.display = 'block';
 
   canvasFinal.toBlob(blob=>{
-    const a=document.createElement('a');
-    a.href=URL.createObjectURL(blob);
-    a.download=`foto_${Date.now()}.${format}`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  },type,quality);
+    lastBlob = blob;
+    resultBar.style.display = 'flex';
+  }, 'image/png');
+}
+
+function startStopVideo(){
+  if(recording){
+    mediaRecorder.stop();
+    recording = false;
+    return;
+  }
+
+  recording = true;
+  chunks = [];
+  video.style.display = 'none';
+
+  canvasFinal.width = 1080;
+  canvasFinal.height = 1920;
+
+  function loop(){
+    if(!recording) return;
+    drawVideo(ctxFinal,1080,1920);
+    drawMoldura(ctxFinal,1080,1920);
+    requestAnimationFrame(loop);
+  }
+  loop();
+
+  const streamCanvas = canvasFinal.captureStream(30);
+  stream.getAudioTracks().forEach(t=>streamCanvas.addTrack(t));
+
+  mediaRecorder = new MediaRecorder(streamCanvas,{mimeType:'video/webm'});
+  mediaRecorder.ondataavailable=e=>chunks.push(e.data);
+  mediaRecorder.onstop=()=>{
+    lastBlob = new Blob(chunks,{type:'video/webm'});
+    resultBar.style.display = 'flex';
+  };
+  mediaRecorder.start();
+}
+
+function downloadFile(){
+  if(!lastBlob) return;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(lastBlob);
+  a.download = `arquivo_${Date.now()}`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function resetCamera(){
+  canvasPreview.style.display = 'none';
+  resultBar.style.display = 'none';
+  video.style.display = 'block';
 }
 
 function drawVideo(ctx,w,h){
   const vw = video.videoWidth;
   const vh = video.videoHeight;
-  if(!vw||!vh)return;
+  if(!vw||!vh) return;
 
   ctx.clearRect(0,0,w,h);
-  ctx.save();
-
   const vr = vw/vh;
   const cr = w/h;
   let dw,dh;
 
-  if(vr>cr){
-    dh=h; dw=h*vr;
+  if(vr > cr){
+    dh = h;
+    dw = h * vr;
   }else{
-    dw=w; dh=w/vr;
+    dw = w;
+    dh = w / vr;
   }
-
   ctx.drawImage(video,(w-dw)/2,(h-dh)/2,dw,dh);
-  ctx.restore();
 }
 
 function drawMoldura(ctx,w,h){
-  if(moldura.naturalWidth===w && moldura.naturalHeight===h){
+  if(moldura.naturalWidth === w && moldura.naturalHeight === h){
     ctx.drawImage(moldura,0,0);
   }else{
     ctx.drawImage(moldura,0,0,w,h);
