@@ -1,16 +1,15 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Camera Booth – Estável</title>
+<title>Camera Booth FINAL</title>
 
 <style>
 *{box-sizing:border-box}
 body{
   margin:0;
   background:#000;
-  color:#fff;
   overflow:hidden;
   font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
 }
@@ -30,21 +29,14 @@ video,canvas,img{
   object-fit:cover;
   z-index:1;
 }
-#camera.mirrored{
-  transform:scaleX(-1);
-}
-#canvasPreview{
+#camera.hidden{
   display:none;
-  z-index:2;
-  object-fit:contain;
-  background:#000;
 }
-#molduraImagePreview{
-  z-index:3;
+#moldura{
   object-fit:cover;
   pointer-events:none;
+  z-index:2;
 }
-
 .controls{
   position:absolute;
   bottom:20px;
@@ -59,10 +51,8 @@ button{
   border-radius:30px;
   border:none;
   font-size:14px;
-  cursor:pointer;
 }
-
-.resultBar{
+.result{
   position:absolute;
   bottom:90px;
   width:100%;
@@ -78,12 +68,10 @@ button{
 
 <div class="stage">
   <video id="camera" autoplay playsinline muted></video>
-  <canvas id="canvasPreview"></canvas>
-  <canvas id="canvasFinal" style="display:none"></canvas>
-  <img id="molduraImagePreview" src="moldura1.png" />
+  <img id="moldura" src="moldura1.png">
 </div>
 
-<div class="resultBar" id="resultBar">
+<div class="result" id="result">
   <button id="downloadBtn">📥 Baixar</button>
   <button id="newBtn">🔄 Nova</button>
 </div>
@@ -96,21 +84,14 @@ button{
 
 <script>
 const video = document.getElementById('camera');
-const canvasFinal = document.getElementById('canvasFinal');
-const canvasPreview = document.getElementById('canvasPreview');
-const moldura = document.getElementById('molduraImagePreview');
-const resultBar = document.getElementById('resultBar');
-const downloadBtn = document.getElementById('downloadBtn');
-const newBtn = document.getElementById('newBtn');
-
-const ctxFinal = canvasFinal.getContext('2d');
-const ctxPreview = canvasPreview.getContext('2d');
+const moldura = document.getElementById('moldura');
+const result = document.getElementById('result');
 
 let stream = null;
-let usingFrontCamera = true;
+let usingFront = true;
 let lastBlob = null;
 
-// ---------- CAMERA ----------
+// ===== CAMERA =====
 async function startCamera(){
   if(stream){
     stream.getTracks().forEach(t=>t.stop());
@@ -118,130 +99,111 @@ async function startCamera(){
   }
 
   stream = await navigator.mediaDevices.getUserMedia({
-    video:{
-      facingMode: usingFrontCamera ? 'user' : 'environment',
-      width:{ ideal:1280 },
-      height:{ ideal:720 }
-    },
+    video:{ facingMode: usingFront ? 'user' : 'environment' },
     audio:true
   });
 
   video.srcObject = stream;
-  video.classList.toggle('mirrored', usingFrontCamera);
+  video.style.display = 'block';
   await video.play();
 }
 
-// ---------- SWITCH ----------
-async function switchCamera(){
-  usingFrontCamera = !usingFrontCamera;
+// ===== SWITCH =====
+document.getElementById('switchBtn').onclick = async ()=>{
+  usingFront = !usingFront;
   await startCamera();
-}
+};
 
-// ---------- DRAW ----------
-function drawVideoTo(ctx,w,h){
+// ===== FOTO =====
+document.getElementById('photoBtn').onclick = async ()=>{
+  const canvas = document.createElement('canvas');
+  canvas.width = 1080;
+  canvas.height = 1920;
+  const ctx = canvas.getContext('2d');
+
   const vw = video.videoWidth;
   const vh = video.videoHeight;
-  if(!vw || !vh) return;
 
-  ctx.clearRect(0,0,w,h);
   const vr = vw/vh;
-  const cr = w/h;
+  const cr = 1080/1920;
   let dw,dh;
 
-  if(vr>cr){ dh=h; dw=h*vr; }
-  else { dw=w; dh=w/vr; }
+  if(vr>cr){ dh=1920; dw=1920*vr; }
+  else{ dw=1080; dh=1080/vr; }
 
-  ctx.drawImage(video,(w-dw)/2,(h-dh)/2,dw,dh);
-}
+  ctx.drawImage(video,(1080-dw)/2,(1920-dh)/2,dw,dh);
+  ctx.drawImage(moldura,0,0,1080,1920);
 
-function drawMoldura(ctx,w,h){
-  if(moldura.naturalWidth===w && moldura.naturalHeight===h){
-    ctx.drawImage(moldura,0,0);
-  }else{
-    ctx.drawImage(moldura,0,0,w,h);
+  canvas.toBlob(b=>{
+    lastBlob = b;
+    result.style.display='flex';
+  },'image/png');
+};
+
+// ===== VIDEO =====
+let recorder, chunks=[], recording=false;
+
+document.getElementById('videoBtn').onclick = ()=>{
+  if(recording){
+    recording=false;
+    recorder.stop();
+    return;
   }
-}
 
-// ---------- PHOTO ----------
-async function takePhoto(){
-  canvasFinal.width = 1080;
-  canvasFinal.height = 1920;
+  const canvas = document.createElement('canvas');
+  canvas.width = 1080;
+  canvas.height = 1920;
+  const ctx = canvas.getContext('2d');
 
-  drawVideoTo(ctxFinal,1080,1920);
-  drawMoldura(ctxFinal,1080,1920);
-
-  canvasPreview.width = 1080;
-  canvasPreview.height = 1920;
-  ctxPreview.drawImage(canvasFinal,0,0);
-
-  video.style.display = 'none';
-  canvasPreview.style.display = 'block';
-  resultBar.style.display = 'flex';
-
-  canvasFinal.toBlob(b=>lastBlob=b,'image/png');
-}
-
-// ---------- VIDEO ----------
-let recording=false, recorder, chunks=[];
-
-function startVideo(){
-  if(recording) return;
   recording=true;
   chunks=[];
 
-  canvasFinal.width = 1080;
-  canvasFinal.height = 1920;
-
   function loop(){
     if(!recording) return;
-    drawVideoTo(ctxFinal,1080,1920);
-    drawMoldura(ctxFinal,1080,1920);
+
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+    const vr = vw/vh;
+    const cr = 1080/1920;
+    let dw,dh;
+
+    if(vr>cr){ dh=1920; dw=1920*vr; }
+    else{ dw=1080; dh=1080/vr; }
+
+    ctx.clearRect(0,0,1080,1920);
+    ctx.drawImage(video,(1080-dw)/2,(1920-dh)/2,dw,dh);
+    ctx.drawImage(moldura,0,0,1080,1920);
+
     requestAnimationFrame(loop);
   }
   loop();
 
-  const cStream = canvasFinal.captureStream(30);
+  const cStream = canvas.captureStream(30);
   stream.getAudioTracks().forEach(t=>cStream.addTrack(t));
 
   recorder = new MediaRecorder(cStream,{mimeType:'video/webm'});
   recorder.ondataavailable=e=>chunks.push(e.data);
   recorder.onstop=()=>{
     lastBlob = new Blob(chunks,{type:'video/webm'});
-    resultBar.style.display='flex';
+    result.style.display='flex';
   };
   recorder.start();
-}
+};
 
-function stopVideo(){
-  recording=false;
-  recorder.stop();
-  video.style.display='none';
-  canvasPreview.style.display='none';
-}
-
-// ---------- DOWNLOAD / RESET ----------
-function downloadFile(){
+// ===== DOWNLOAD / RESET =====
+document.getElementById('downloadBtn').onclick=()=>{
   if(!lastBlob) return;
   const a=document.createElement('a');
   a.href=URL.createObjectURL(lastBlob);
-  a.download=`arquivo_${Date.now()}`;
+  a.download='arquivo_'+Date.now();
   a.click();
   URL.revokeObjectURL(a.href);
-}
+};
 
-function resetAll(){
-  canvasPreview.style.display='none';
-  video.style.display='block';
-  resultBar.style.display='none';
+document.getElementById('newBtn').onclick=()=>{
+  result.style.display='none';
   lastBlob=null;
-}
-
-// ---------- EVENTS ----------
-document.getElementById('switchBtn').onclick=switchCamera;
-document.getElementById('photoBtn').onclick=takePhoto;
-document.getElementById('videoBtn').onclick=()=>recording?stopVideo():startVideo();
-downloadBtn.onclick=downloadFile;
-newBtn.onclick=resetAll;
+};
 
 // START
 startCamera();
