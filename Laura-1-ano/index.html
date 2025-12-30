@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>Câmera Customizada - Molduras</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:#000;color:#fff;overflow:hidden;width:100vw;height:100dvh;font-family:sans-serif}
+.frame,.stage{position:relative;width:100%;height:100%;overflow:hidden}
+#camera,#canvasPreview,#videoPreview,#molduraImagePreview{
+position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover
+}
+#camera.mirrored{transform:scaleX(-1)}
+#canvasPreview,#videoPreview{display:none;z-index:6}
+#molduraImagePreview{pointer-events:none;z-index:5}
+.ui-layer{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;padding:20px;z-index:20}
+.top-bar{display:flex;justify-content:space-between}
+.controls-bottom{display:flex;flex-direction:column;align-items:center;gap:30px}
+.btn{padding:10px 16px;border-radius:20px;background:rgba(0,0,0,.6);border:2px solid rgba(255,255,255,.3);color:#fff}
+.btn-frame{border-color:#25D366}
+.action-btn-large{width:80px;height:80px;border-radius:50%;border:4px solid #fff;background:rgba(255,255,255,.2)}
+.action-btn-large.recording{border-color:red;background:rgba(255,0,0,.5)}
+.action-btn-mini{width:50px;height:50px;border-radius:50%;border:2px solid #fff;background:rgba(255,255,255,.2)}
+#startScreen{position:absolute;inset:0;background:#000;display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:50}
+#startBtn{padding:18px 32px;font-size:20px;border:none;border-radius:50px;background:#FF5722;color:#fff}
+.flash{position:absolute;inset:0;background:#fff;opacity:0;transition:.1s;z-index:10}
+</style>
+</head>
+<body>
+<div class="frame">
+<div class="stage" id="stage">
+<video id="camera" autoplay playsinline muted></video>
+<canvas id="canvasPreview"></canvas>
+<canvas id="canvasFinal" style="display:none"></canvas>
+<video id="videoPreview" playsinline controls></video>
+<img id="molduraImagePreview" src="moldura1.png"/>
+<div class="flash" id="flash"></div>
+<div class="ui-layer" id="cameraUI" style="display:none">
+<div class="top-bar">
+<button class="btn" id="switchBtn">🔄 Trocar</button>
+<div id="recordingTimer" style="display:none;background:red;padding:6px 12px;border-radius:12px">00:00</div>
+</div>
+<div class="controls-bottom">
+<div><button class="btn btn-frame">Foto 1</button></div>
+<div style="display:flex;gap:20px">
+<button class="action-btn-mini" id="capturePhotoBtn">📷</button>
+<button class="action-btn-large" id="captureVideoBtn"></button>
+</div>
+</div>
+</div>
+<div class="ui-layer" id="resultUI" style="display:none;justify-content:flex-end;align-items:center">
+<div style="display:flex;flex-direction:column;gap:12px">
+<a id="downloadBtn" class="btn btn-frame">📥 Baixar</a>
+<button class="btn" id="newPhotoBtn">🔄 Novo</button>
+</div>
+</div>
+</div>
+</div>
+<div id="startScreen">
+<h2>Configuração de Câmera</h2>
+<p>Permita acesso para iniciar</p>
+<button id="startBtn">INICIAR</button>
+<p id="errorMsg" style="color:red"></p>
+</div>
+<script>
+let stream=null,usingFrontCamera=true,isRecording=false,mediaRecorder,recordedChunks=[],recordingStartTime,animationFrameId,currentBlob,currentName
+const video=document.getElementById('camera')
+const canvasFinal=document.getElementById('canvasFinal')
+const ctxFinal=canvasFinal.getContext('2d',{alpha:false})
+const canvasPreview=document.getElementById('canvasPreview')
+const ctxPreview=canvasPreview.getContext('2d')
+const videoPreview=document.getElementById('videoPreview')
+const moldura=document.getElementById('molduraImagePreview')
+const recordingTimer=document.getElementById('recordingTimer')
+document.getElementById('startBtn').onclick=()=>initCamera(true)
+document.getElementById('switchBtn').onclick=switchCamera
+document.getElementById('capturePhotoBtn').onclick=takePhoto
+document.getElementById('captureVideoBtn').onclick=()=>isRecording?stopRecording():startRecording()
+document.getElementById('newPhotoBtn').onclick=resetCamera
+document.getElementById('downloadBtn').onclick=downloadFile
+async function initCamera(tryAudio){
+if(stream)stream.getTracks().forEach(t=>t.stop())
+try{
+stream=await navigator.mediaDevices.getUserMedia({
+video:{
+facingMode:usingFrontCamera?'user':'environment',
+width:{ideal:1920,max:3840},
+height:{ideal:1080,max:2160},
+aspectRatio:9/16,
+frameRate:{ideal:30,max:60}
+},
+audio:tryAudio
+})
+video.srcObject=stream
+video.classList.toggle('mirrored',usingFrontCamera)
+video.onloadedmetadata=()=>{video.play();startScreen.style.display='none';cameraUI.style.display='flex'}
+applyAdvancedCameraControls(stream)
+}catch(e){
+if(tryAudio)initCamera(false)
+else errorMsg.innerText='Erro ao acessar câmera'
+}
+}
+function applyAdvancedCameraControls(stream){
+const track=stream.getVideoTracks()[0]
+if(!track?.getCapabilities)return
+const caps=track.getCapabilities()
+const adv={}
+if(caps.focusMode?.includes('continuous'))adv.focusMode='continuous'
+if(caps.exposureMode?.includes('continuous'))adv.exposureMode='continuous'
+if(caps.whiteBalanceMode?.includes('continuous'))adv.whiteBalanceMode='continuous'
+if(Object.keys(adv).length)track.applyConstraints({advanced:[adv]}).catch(()=>{})
+}
+function drawVideo(w,h){
+const vw=video.videoWidth,vh=video.videoHeight
+if(!vw)return
+ctxFinal.imageSmoothingEnabled=true
+ctxFinal.imageSmoothingQuality='high'
+ctxFinal.clearRect(0,0,w,h)
+ctxFinal.save()
+ctxFinal.translate(w/2,h/2)
+if(usingFrontCamera)ctxFinal.scale(-1,1)
+const r=vw/vh
+let dw,dh
+if(r>w/h){dh=h;dw=h*r}else{dw=w;dh=w/r}
+ctxFinal.drawImage(video,-dw/2,-dh/2,dw,dh)
+ctxFinal.restore()
+const ratio=moldura.naturalWidth/moldura.naturalHeight
+ctxFinal.drawImage(moldura,0,h-(w/ratio),w,w/ratio)
+}
+function takePhoto(){
+flash()
+canvasFinal.width=1080
+canvasFinal.height=1920
+drawVideo(1080,1920)
+canvasPreview.width=stage.clientWidth
+canvasPreview.height=stage.clientHeight
+ctxPreview.drawImage(canvasFinal,0,0,canvasPreview.width,canvasPreview.height)
+canvasFinal.toBlob(b=>showResult('image',b),'image/png')
+}
+function startRecording(){
+isRecording=true
+recordedChunks=[]
+canvasFinal.width=1080
+canvasFinal.height=1920
+recordingTimer.style.display='block'
+recordingStartTime=Date.now()
+function loop(){
+if(!isRecording)return
+drawVideo(1080,1920)
+updateTimer()
+animationFrameId=requestAnimationFrame(loop)
+}
+loop()
+const s=canvasFinal.captureStream(30)
+mediaRecorder=new MediaRecorder(s,{mimeType:'video/webm'})
+mediaRecorder.ondataavailable=e=>recordedChunks.push(e.data)
+mediaRecorder.onstop=finishVideo
+mediaRecorder.start()
+}
+function stopRecording(){
+isRecording=false
+cancelAnimationFrame(animationFrameId)
+mediaRecorder.stop()
+recordingTimer.style.display='none'
+recordingTimer.innerText='00:00'
+}
+function finishVideo(){
+const blob=new Blob(recordedChunks,{type:'video/webm'})
+videoPreview.src=URL.createObjectURL(blob)
+showResult('video',blob)
+}
+function updateTimer(){
+const t=Math.floor((Date.now()-recordingStartTime)/1000)
+recordingTimer.innerText=`${String(t/60|0).padStart(2,'0')}:${String(t%60).padStart(2,'0')}`
+}
+function showResult(type,blob){
+video.style.display='none'
+moldura.style.display='none'
+cameraUI.style.display='none'
+resultUI.style.display='flex'
+if(type==='image'){canvasPreview.style.display='block';videoPreview.style.display='none';currentBlob=blob;currentName='foto.png'}
+else{canvasPreview.style.display='none';videoPreview.style.display='block';currentBlob=blob;currentName='video.webm'}
+}
+function resetCamera(){
+video.style.display='block'
+moldura.style.display='block'
+canvasPreview.style.display='none'
+videoPreview.pause()
+resultUI.style.display='none'
+cameraUI.style.display='flex'
+}
+function downloadFile(){
+const a=document.createElement('a')
+a.href=URL.createObjectURL(currentBlob)
+a.download=currentName
+a.click()
+}
+function switchCamera(){
+usingFrontCamera=!usingFrontCamera
+initCamera(true)
+}
+function flash(){
+const f=document.getElementById('flash')
+f.style.opacity=1
+setTimeout(()=>f.style.opacity=0,120)
+}
+</script>
+</body>
+</html>
