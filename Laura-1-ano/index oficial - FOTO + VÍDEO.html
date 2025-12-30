@@ -1,0 +1,572 @@
+<!--
+Este código-fonte (HTML, CSS, JavaScript e integrações) é de autoria de Bianca Hartwig / Estúdio Criativo.
+É protegido pela Lei de Direitos Autorais (Lei 9.610/98). É proibida a cópia, reprodução, modificação,
+distribuição ou utilização comercial deste código, total ou parcial, sem autorização expressa da autora.
+-->
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <!-- Estrutura base da câmera com moldura | build: 2025-12-01-ec-a1 -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Moldura Fazendinha</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+      font-family: sans-serif;
+    }
+    #video {
+      position: absolute;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+    }
+    #overlay {
+      position: absolute;
+      inset: 0;
+      max-width: 100vw;
+      max-height: 100vh;
+      margin: auto;
+      object-fit: contain;
+      pointer-events: none;
+    }
+    #buttons {
+      position: absolute;
+      bottom: 50px;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      z-index: 10;
+    }
+    button {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      border: none;
+      background: white;
+      font-size: 28px;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+    #preview-container {
+      position: absolute;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 11;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+    }
+    #photo-preview {
+      width: 85vw;
+      max-width: 280px;
+      border: 3px solid white;
+      border-radius: 10px;
+      margin-bottom: 8px;
+    }
+    #save-btn, #retry-btn {
+      background: #4CAF50;
+      color: white;
+      border-radius: 6px;
+      padding: 8px 16px;
+      font-size: 15px;
+      margin-top: 5px;
+      width: 160px;
+    }
+    #instructions {
+      color: #fff;
+      font-size: 14px;
+      font-weight: bold;
+      background-color: rgba(0,0,0,0.6);
+      padding: 10px 12px;
+      border-radius: 8px;
+      margin-top: 10px;
+      display: none;
+      text-align: center;
+      max-width: 90%;
+    }
+    #recording-indicator {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 12;
+      background: rgba(0,0,0,0.7);
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: bold;
+      display: none;
+    }
+    #video-preview-container {
+      position: absolute;
+      bottom: 140px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 11;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+    }
+    #video-preview {
+      width: 85vw;
+      max-width: 280px;
+      border: 3px solid white;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      background: #000;
+    }
+    #save-video-btn {
+      background: #4CAF50;
+      color: white;
+      border-radius: 6px;
+      padding: 8px 16px;
+      font-size: 15px;
+      margin-top: 5px;
+      width: 180px;
+    }
+    #video-instructions {
+      color: #fff;
+      font-size: 13px;
+      font-weight: bold;
+      background-color: rgba(0,0,0,0.6);
+      padding: 8px 10px;
+      border-radius: 8px;
+      margin-top: 8px;
+      display: none;
+      text-align: center;
+      max-width: 90%;
+    }
+    /* Mensagem de carregamento da conversão */
+    #loading-message {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 20;
+      background: rgba(0,0,0,0.8);
+      color: #fff;
+      padding: 16px 20px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: bold;
+      text-align: center;
+      max-width: 80%;
+      display: none;
+    }
+  </style>
+</head>
+<body data-ec="mfz-640-24-ecb">
+  <video id="video" autoplay muted playsinline></video>
+  <img id="overlay" src="moldura.png" alt="Moldura" />
+
+  <div id="recording-indicator">🔴 REC 00:00</div>
+  <div id="loading-message">Aguarde… estamos preparando seu vídeo 📽️✨</div>
+
+  <div id="buttons">
+    <button id="switch-camera" title="Trocar câmera">🔄</button>
+    <button id="capture" title="Tirar foto">📸</button>
+    <button id="start-recording" title="Gravar vídeo">🎥</button>
+    <button id="stop-recording" title="Parar gravação" style="display:none;">⏹</button>
+  </div>
+
+  <canvas id="canvas" style="display:none;"></canvas>
+  <canvas id="recordingCanvas" style="display:none;"></canvas>
+
+  <div id="preview-container">
+    <img id="photo-preview" />
+    <button id="save-btn">Salvar na galeria</button>
+    <button id="retry-btn">Tirar outra</button>
+    <div id="instructions">
+      Se estiver no iPhone:<br>
+      Toque e segure a imagem e selecione “Salvar na Fototeca”.
+    </div>
+  </div>
+
+  <div id="video-preview-container">
+    <video id="video-preview" controls playsinline></video>
+    <button id="save-video-btn">Salvar vídeo</button>
+    <div id="video-instructions">
+      No iPhone, o vídeo vai para o app “Arquivos” (na pasta Downloads).<br>
+      Abra o app Arquivos, toque no vídeo, depois em compartilhar e selecione “Salvar Vídeo” para enviar à galeria.
+    </div>
+  </div>
+
+  <script>
+    // Marcadores discretos internos (não usados no fluxo visível)
+    const _ecSeed37 = 37; // ajuste interno de base
+    const _ecRevCode = 1201; // revisão 12/01 (codificada)
+    const _ecBuildYear = 2025;
+    const _ecB64 = "RUMtTVpGLTIwMjUtMTItMDEtQjFBLTQw"; // base interna
+
+    function _ecDecodeSignature() {
+      try {
+        const raw = atob(_ecB64);
+        return raw.split("-").slice(0, 4).join("-");
+      } catch (e) {
+        return _ecSeed37 + "-" + _ecRevCode + "-" + _ecBuildYear;
+      }
+    }
+    // Não chamar _ecDecodeSignature em nenhuma parte do fluxo principal.
+
+    function _ecPaddingHelper(v) {
+      // função de utilidade não usada diretamente, mas consistente com o resto do código
+      return String(v).padStart(2, "0");
+    }
+
+    // URL da API no Railway para converter o vídeo em MP4
+    const API_URL = "https://video-converter-api-production-bb8e.up.railway.app/convert";
+    const SECURITY_KEY = "EC-MOLDURA-2025-V1";
+
+    const video = document.getElementById('video');
+    const overlay = document.getElementById('overlay');
+    const canvas = document.getElementById('canvas');
+    const captureBtn = document.getElementById('capture');
+    const switchCameraBtn = document.getElementById('switch-camera');
+    const photoPreview = document.getElementById('photo-preview');
+    const previewContainer = document.getElementById('preview-container');
+    const saveBtn = document.getElementById('save-btn');
+    const retryBtn = document.getElementById('retry-btn');
+    const instructions = document.getElementById('instructions');
+
+    const startRecordBtn = document.getElementById('start-recording');
+    const stopRecordBtn = document.getElementById('stop-recording');
+    const recordingIndicator = document.getElementById('recording-indicator');
+    const recordingCanvas = document.getElementById('recordingCanvas');
+
+    const videoPreviewContainer = document.getElementById('video-preview-container');
+    const videoPreviewEl = document.getElementById('video-preview');
+    const saveVideoBtn = document.getElementById('save-video-btn');
+    const videoInstructions = document.getElementById('video-instructions');
+
+    const loadingMessage = document.getElementById('loading-message');
+
+    let usingFrontCamera = true;
+    let stream;
+
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let isRecording = false;
+    let recordStartTime = 0;
+    let recordTimerInterval = null;
+    let recordedMimeType = 'video/webm';
+    let lastVideoUrl = null;
+
+    const isiOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    function showLoading() {
+      loadingMessage.style.display = 'block';
+    }
+
+    function hideLoading() {
+      loadingMessage.style.display = 'none';
+    }
+
+    function setButtonsDisabledDuringProcess(disabled) {
+      switchCameraBtn.disabled = disabled;
+      captureBtn.disabled = disabled;
+      startRecordBtn.disabled = disabled;
+      stopRecordBtn.disabled = disabled;
+    }
+
+    async function startCamera() {
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+      }
+
+      if (stream) stream.getTracks().forEach(track => track.stop());
+      const constraints = {
+        video: {
+          facingMode: usingFrontCamera ? 'user' : 'environment',
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        },
+        audio: true
+      };
+      stream = await navigator.mediaDevices.getUserMedia(constraints);
+      video.srcObject = stream;
+      video.style.transform = usingFrontCamera ? 'scaleX(-1)' : 'scaleX(1)';
+      overlay.style.transform = 'scaleX(1)';
+    }
+
+    switchCameraBtn.onclick = () => {
+      usingFrontCamera = !usingFrontCamera;
+      startCamera();
+    };
+
+    // FOTO
+    captureBtn.onclick = () => {
+      if (!stream) return;
+      const track = stream.getVideoTracks()[0];
+      const settings = track.getSettings();
+      const width = settings.width;
+      const height = settings.height;
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (usingFrontCamera) {
+        ctx.translate(width, 0);
+        ctx.scale(-1, 1);
+      }
+      ctx.drawImage(video, 0, 0, width, height);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.drawImage(overlay, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL('image/png');
+      photoPreview.src = dataUrl;
+      previewContainer.style.display = 'flex';
+    };
+
+    saveBtn.onclick = () => {
+      const link = document.createElement('a');
+      link.download = 'foto-moldura.png';
+      link.href = photoPreview.src;
+      link.click();
+      if (isiOS) {
+        instructions.style.display = 'block';
+      }
+    };
+
+    retryBtn.onclick = () => {
+      previewContainer.style.display = 'none';
+      instructions.style.display = 'none';
+    };
+
+    function startRecordingTimer() {
+      recordStartTime = Date.now();
+      recordingIndicator.style.display = 'block';
+      recordingIndicator.textContent = '🔴 REC 00:00';
+
+      recordTimerInterval = setInterval(() => {
+        const elapsedMs = Date.now() - recordStartTime;
+        const totalSeconds = Math.floor(elapsedMs / 1000);
+        const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+        const seconds = String(totalSeconds % 60).padStart(2, '0');
+        recordingIndicator.textContent = `🔴 REC ${minutes}:${seconds}`;
+      }, 500);
+    }
+
+    function stopRecordingTimer() {
+      if (recordTimerInterval) {
+        clearInterval(recordTimerInterval);
+        recordTimerInterval = null;
+      }
+      recordingIndicator.style.display = 'none';
+    }
+
+    function startVideoRecording() {
+      if (!stream) return;
+
+      const track = stream.getVideoTracks()[0];
+      const settings = track.getSettings();
+      const camWidth = settings.width || 1920;
+      const camHeight = settings.height || 1080;
+
+      // Resolução reduzida (640 de largura) para estabilidade em Android,
+      // ainda com boa qualidade para redes sociais
+      const targetWidth = 640;
+      const ratio = targetWidth / camWidth;
+      const targetHeight = Math.round(camHeight * ratio);
+
+      const width = targetWidth;
+      const height = targetHeight;
+
+      recordingCanvas.width = width;
+      recordingCanvas.height = height;
+      const rctx = recordingCanvas.getContext('2d');
+
+      isRecording = true;
+      recordedChunks = [];
+      videoPreviewContainer.style.display = 'none';
+      videoInstructions.style.display = 'none';
+
+      function drawFrame() {
+        if (!isRecording) return;
+
+        rctx.clearRect(0, 0, width, height);
+
+        if (usingFrontCamera) {
+          rctx.save();
+          rctx.translate(width, 0);
+          rctx.scale(-1, 1);
+          rctx.drawImage(video, 0, 0, width, height);
+          rctx.restore();
+        } else {
+          rctx.drawImage(video, 0, 0, width, height);
+        }
+
+        rctx.drawImage(overlay, 0, 0, width, height);
+
+        requestAnimationFrame(drawFrame);
+      }
+      drawFrame();
+
+      // 24 fps para aliviar ainda mais o processamento
+      const baseFps = 24;
+      const videoStream = recordingCanvas.captureStream(baseFps);
+      const combinedStream = new MediaStream();
+
+      videoStream.getVideoTracks().forEach(t => combinedStream.addTrack(t));
+
+      const audioTracks = stream.getAudioTracks();
+      if (audioTracks.length > 0) {
+        combinedStream.addTrack(audioTracks[0]);
+      }
+
+      let options = {};
+      recordedMimeType = 'video/webm';
+
+      try {
+        if (isiOS) {
+          options.mimeType = 'video/mp4';
+          recordedMimeType = 'video/mp4';
+        } else {
+          if (typeof MediaRecorder !== 'undefined') {
+            if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')) {
+              options.mimeType = 'video/webm;codecs=vp9,opus';
+              recordedMimeType = 'video/webm';
+            } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')) {
+              options.mimeType = 'video/webm;codecs=vp8,opus';
+              recordedMimeType = 'video/webm';
+            }
+          }
+        }
+
+        mediaRecorder = new MediaRecorder(combinedStream, options);
+      } catch (e) {
+        console.error('Erro ao iniciar MediaRecorder:', e);
+        alert('Este navegador não suporta gravação de vídeo com som nesta moldura. As fotos vão funcionar normalmente. 🥹');
+        isRecording = false;
+        stopRecordingTimer();
+        startRecordBtn.style.display = 'inline-block';
+        stopRecordBtn.style.display = 'none';
+        return;
+      }
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          recordedChunks.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        isRecording = false;
+        stopRecordingTimer();
+
+        const blob = new Blob(recordedChunks, { type: recordedMimeType });
+
+        if (!blob || blob.size === 0) {
+          alert('Nenhum dado de vídeo foi gravado.');
+          startRecordBtn.style.display = 'inline-block';
+          stopRecordBtn.style.display = 'none';
+          return;
+        }
+
+        // Envia o vídeo para o servidor converter em MP4
+        showLoading();
+        setButtonsDisabledDuringProcess(true);
+
+        try {
+          const formData = new FormData();
+          formData.append('video', blob, 'video.webm');
+
+          const device = isiOS ? 'ios' : 'android';
+
+          const resposta = await fetch(`${API_URL}?device=${device}&key=${SECURITY_KEY}`, {
+            method: 'POST',
+            body: formData
+          });
+
+          if (!resposta.ok) {
+            let erroTxt = '';
+            try {
+              erroTxt = await resposta.text();
+            } catch (e) {}
+            console.error('Erro na conversão no servidor:', erroTxt);
+            alert('Ocorreu um erro ao converter o vídeo. Tente novamente.');
+          } else {
+            const mp4Blob = await resposta.blob();
+            const url = URL.createObjectURL(mp4Blob);
+            lastVideoUrl = url;
+
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = 'video-moldura.mp4';
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+              document.body.removeChild(a);
+            }, 1000);
+
+            // iPhone: mostra instruções de Arquivos
+            if (isiOS) {
+              videoPreviewContainer.style.display = 'flex';
+              videoPreviewEl.style.display = 'none';
+              saveVideoBtn.style.display = 'none';
+              videoInstructions.style.display = 'block';
+            } else {
+              videoPreviewContainer.style.display = 'none';
+            }
+
+            URL.revokeObjectURL(url);
+          }
+        } catch (err) {
+          console.error('Erro ao enviar vídeo para o servidor:', err);
+          alert('Erro ao enviar o vídeo para o servidor.');
+        } finally {
+          hideLoading();
+          setButtonsDisabledDuringProcess(false);
+          startRecordBtn.style.display = 'inline-block';
+          stopRecordBtn.style.display = 'none';
+        }
+      };
+
+      startRecordingTimer();
+      mediaRecorder.start(100);
+
+      startRecordBtn.style.display = 'none';
+      stopRecordBtn.style.display = 'inline-block';
+    }
+
+    startRecordBtn.onclick = () => {
+      if (isRecording) return;
+      startVideoRecording();
+    };
+
+    stopRecordBtn.onclick = () => {
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+      }
+    };
+
+    saveVideoBtn.onclick = () => {
+      if (!lastVideoUrl) return;
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = lastVideoUrl;
+      const ext = recordedMimeType.includes('mp4') ? 'mp4' : 'webm';
+      a.download = 'video-moldura.' + ext;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+      }, 1000);
+
+      if (isiOS) {
+        videoInstructions.style.display = 'block';
+      }
+    };
+
+    startCamera();
+  </script>
+</body>
+</html>
