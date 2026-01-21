@@ -1,0 +1,18 @@
+{
+  "ids": {
+    "reseller_id": "MARCELA-ADM",
+    "build_id": "BUILD-20260121-C443",
+    "site_id": "aniversario-1-ano-miguel"
+  },
+  "tracking": {
+    "enabled": true,
+    "url": "https://script.google.com/macros/s/AKfycbxUjLSyfJ1BA4Rg_5LwknPeeCi84v4WEQ0nJlsu-iV3-0EseWHQaABbCLJwBKaB7eq3/exec"
+  },
+  "envio": {
+    "tipo": "whatsapp",
+    "whatsapp": {
+      "telefoneE164": "5511985793919",
+      "mensagem": "Fotos do aniversário de 1 ano do Miguel 🎉"
+    }
+  }
+}
