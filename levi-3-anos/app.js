@@ -1,0 +1,1 @@
+document.getElementById('start').onclick=async()=>{document.getElementById('capa').hidden=true;document.getElementById('app').hidden=false;const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:1920,height:1080}});document.querySelector('video').srcObject=s;}
