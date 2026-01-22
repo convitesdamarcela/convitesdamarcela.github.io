@@ -1,1 +1,59 @@
-teste-1-ano/index.html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Memórias de um Dia Especial</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- CAPA -->
+<section id="capa">
+  <img src="capa.png" class="capa-img" alt="Capa do evento">
+  <button id="btnIniciar" class="btn-principal">
+    Aperte aqui para iniciar
+  </button>
+</section>
+
+<!-- APP -->
+<section id="app" class="hidden">
+
+  <!-- CONTROLE SUPERIOR -->
+  <div class="topo">
+    <button id="btnTrocarCamera" class="btn-secundario">
+      🔄 Trocar câmera
+    </button>
+  </div>
+
+  <!-- CAMERA -->
+  <div class="camera-container">
+    <video id="video" autoplay playsinline muted></video>
+    <img src="moldura.png" class="moldura" alt="Moldura">
+  </div>
+
+  <!-- CONTADOR -->
+  <div id="contador" class="contador hidden">3</div>
+
+  <!-- AÇÕES -->
+  <div class="acoes">
+    <button id="btnFoto">📷 Tirar foto</button>
+    <button id="btnTirinha">🎞️ Foto tirinha</button>
+    <button id="btnVideo">🎥 Gravar vídeo</button>
+  </div>
+
+  <!-- CANVAS -->
+  <canvas id="canvas" class="hidden"></canvas>
+
+  <!-- FINAL -->
+  <div id="final" class="final hidden">
+    <button id="btnBaixar">⬇️ Baixar</button>
+    <button id="btnWhats">📤 Enviar WhatsApp</button>
+    <button id="btnDrive">📁 Enviar Google Drive</button>
+  </div>
+
+</section>
+
+<script src="app.js"></script>
+</body>
+</html>
