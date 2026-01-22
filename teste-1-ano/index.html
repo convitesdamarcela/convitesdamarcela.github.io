@@ -1,1 +1,43 @@
-teste-1-ano/index.html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Memórias de um Dia Especial</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<section id="capa">
+  <img src="capa.png" class="capa-img">
+  <button id="btnIniciar" class="btn-principal">Aperte aqui para iniciar</button>
+</section>
+
+<section id="app" class="hidden">
+  <button id="btnTrocarCamera" class="btn-secundario">🔄 Trocar câmera</button>
+
+  <div class="camera-container">
+    <video id="video" autoplay playsinline muted></video>
+    <img src="moldura.png" class="moldura">
+  </div>
+
+  <div id="contador" class="contador hidden">3</div>
+
+  <div class="acoes">
+    <button id="btnFoto">📷 Tirar foto</button>
+    <button id="btnTirinha">🎞️ Foto tirinha</button>
+    <button id="btnVideo">🎥 Gravar vídeo</button>
+  </div>
+
+  <canvas id="canvas" class="hidden"></canvas>
+
+  <div id="final" class="final hidden">
+    <button id="btnBaixar">⬇️ Baixar</button>
+    <button id="btnWhats">📤 WhatsApp</button>
+    <button id="btnDrive">📁 Google Drive</button>
+  </div>
+</section>
+
+<script src="app.js"></script>
+</body>
+</html>
