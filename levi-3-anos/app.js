@@ -1,1 +1,0 @@
-fetch('experience.json').then(r=>r.json()).then(cfg=>{fetch(cfg.tracking.url+'?site='+cfg.ids.site_id).then(r=>r.json()).then(s=>{if(s.status==='BLOCKED'){document.body.innerHTML='<h2>Experiência indisponível</h2>';}});});
