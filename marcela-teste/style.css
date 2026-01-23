@@ -1,0 +1,7 @@
+body{margin:0;font-family:Arial;background:#f5f0e6;text-align:center}
+.hidden{display:none}
+.capa-img{width:100%;max-width:420px}
+#btnIniciar,button{padding:16px 24px;margin:10px;border-radius:18px;border:none;font-size:16px}
+video{width:100%;max-width:420px;border-radius:16px}
+.moldura{position:absolute;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:420px;pointer-events:none}
+.controls{margin-top:10px}
