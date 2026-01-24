@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Moldura Interativa</title>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+  <!-- CAPA INICIAL -->
+  <section id="capa" class="tela ativa">
+    <div class="conteudo-capa">
+      <img src="assets/capa.png" class="img-capa" alt="Capa" />
+
+      <button id="btnIniciar" class="btn-oval">
+        Aperte aqui para iniciar
+      </button>
+    </div>
+  </section>
+
+  <!-- MENU -->
+  <section id="menu" class="tela">
+    <div class="menu-botoes">
+      <button id="btnFoto" class="btn-oval">📷 Foto</button>
+      <button id="btnTirinha" class="btn-oval">🎞️ Tirinha</button>
+      <button id="btnVideo" class="btn-oval">🎥 Vídeo</button>
+      <button id="btnTrocarCamera" class="btn-oval">🔄 Trocar câmera</button>
+      <button id="btnPaisagem" class="btn-oval">↔️ Paisagem</button>
+    </div>
+  </section>
+
+  <!-- CÂMERA -->
+  <section id="cameraTela" class="tela">
+    <video id="camera" autoplay playsinline muted></video>
+
+    <!-- MOLDURA -->
+    <img src="assets/moldura-vertical.png" id="moldura" />
+
+    <!-- CONTAGEM -->
+    <div id="contador" class="contador"></div>
+
+    <!-- INDICADOR DE GRAVAÇÃO -->
+    <div id="gravando" class="gravando hidden">🔴 Gravando</div>
+  </section>
+
+  <script src="app.js"></script>
+</body>
+</html>
