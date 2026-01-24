@@ -1,0 +1,88 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #f2efe9;
+  font-family: Arial, sans-serif;
+  text-align: center;
+}
+
+.hidden {
+  display: none;
+}
+
+#capa {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.capa-img {
+  width: 100%;
+  max-width: 420px;
+}
+
+.btn-primary {
+  margin-top: 20px;
+  padding: 18px 30px;
+  font-size: 18px;
+  border-radius: 30px;
+  border: none;
+  background: #e8dccb;
+  color: #000;
+  cursor: pointer;
+}
+
+.camera-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  margin: auto;
+}
+
+video {
+  width: 100%;
+  height: auto;
+  border-radius: 20px;
+}
+
+#moldura {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.controls,
+#finalActions {
+  margin-top: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.controls button,
+#finalActions button {
+  padding: 16px;
+  font-size: 16px;
+  border-radius: 25px;
+  border: none;
+  background: #e8dccb;
+  color: #000;
+  cursor: pointer;
+}
+
+.countdown {
+  font-size: 80px;
+  font-weight: bold;
+  position: absolute;
+  top: 40%;
+  width: 100%;
+  color: #000;
+}

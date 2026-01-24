@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Memórias de um Dia Especial</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<section id="capa">
+  <img src="capa.png" class="capa-img">
+  <button id="btnStart" class="btn-primary">Aperte aqui para iniciar</button>
+</section>
+
+<section id="cameraApp" class="hidden">
+
+  <div class="camera-wrapper">
+    <video id="video" autoplay playsinline muted></video>
+    <img src="moldura.png" id="moldura">
+  </div>
+
+  <div id="countdown" class="countdown hidden">3</div>
+
+  <div class="controls">
+    <button id="btnFlip">🔄 Trocar câmera</button>
+    <button id="btnPhoto">📷 Foto</button>
+    <button id="btnStrip">🎞️ Tirinha</button>
+    <button id="btnVideo">🎥 Vídeo</button>
+  </div>
+
+  <canvas id="canvas" class="hidden"></canvas>
+
+  <div id="finalActions" class="hidden">
+    <button id="btnDownload">⬇️ Baixar</button>
+    <button id="btnWhats">📤 WhatsApp</button>
+    <button id="btnDrive">📁 Google Drive</button>
+  </div>
+
+</section>
+
+<script src="app.js"></script>
+</body>
+</html>
+
