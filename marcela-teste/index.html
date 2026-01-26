@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memórias de um Dia Especial</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Cinzel',serif}
+body{
+  background:#000;
+  color:#000;
+  overflow:hidden;
+}
+.screen{
+  position:absolute;
+  inset:0;
+  display:none;
+  justify-content:center;
+  align-items:center;
+  flex-direction:column;
+}
+.screen.active{display:flex}
+
+.capa{
+  position:absolute;
+  inset:0;
+  background:url('capa.png') center/cover no-repeat;
+  z-index:-1;
+}
+
+.menu{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+
+.btn{
+  background:linear-gradient(135deg,#f2e3d3,#e8d2b8);
+  border:2px solid #fff;
+  border-radius:999px;
+  padding:14px 26px;
+  font-size:16px;
+  color:#000;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+}
+
+.btn.small{padding:10px 22px;font-size:14px}
+
+video{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+.moldura{
+  position:absolute;
+  inset:0;
+  background:url('moldura.png') center/contain no-repeat;
+  pointer-events:none;
+}
+
+.countdown{
+  position:absolute;
+  font-size:80px;
+  color:white;
+  z-index:10;
+}
+
+.rec{
+  position:absolute;
+  top:20px;
+  left:20px;
+  color:red;
+  font-size:18px;
+  display:none;
+}
+</style>
+</head>
+
+<body>
+
+<!-- TELA 1 -->
+<div class="screen active" id="tela1">
+  <div class="capa"></div>
+  <button class="btn" onclick="abrirMenu()">Inicie Memórias</button>
+</div>
+
+<!-- TELA 2 -->
+<div class="screen" id="tela2">
+  <div class="capa"></div>
+  <div class="menu">
+    <button class="btn" onclick="modoFoto()">📸 Foto</button>
+    <button class="btn" onclick="modoTirinha()">🎞 Tirinha</button>
+    <button class="btn" onclick="modoVideo()">🎥 Vídeo</button>
+  </div>
+</div>
+
+<!-- TELA 3 -->
+<div class="screen" id="tela3">
+  <video id="video" autoplay playsinline></video>
+  <div class="moldura"></div>
+  <div class="countdown" id="count"></div>
+  <div class="rec" id="rec">● REC</div>
+
+  <div style="position:absolute;bottom:20px;display:flex;gap:10px">
+    <button class="btn small" id="btnFoto" onclick="tirarFoto()">Tirar Foto</button>
+    <button class="btn small" id="btnVideo" onclick="gravarVideo()">Gravar</button>
+    <button class="btn small" id="btnBaixar" style="display:none" onclick="baixar()">⬇ Baixar</button>
+  </div>
+</div>
+
+<canvas id="canvas" style="display:none"></canvas>
+
+<script>
+let stream, mediaRecorder, chunks=[], modo="";
+
+function trocarTela(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function abrirMenu(){trocarTela('tela2')}
+
+async function abrirCamera(){
+  stream=await navigator.mediaDevices.getUserMedia({
+    video:{facingMode:"user",width:{ideal:1080},height:{ideal:1920}},
+    audio:true
+  });
+  video.srcObject=stream;
+}
+
+function modoFoto(){
+  modo="foto";
+  trocarTela('tela3');
+  abrirCamera();
+  btnFoto.style.display="block";
+  btnVideo.style.display="none";
+}
+
+function modoVideo(){
+  modo="video";
+  trocarTela('tela3');
+  abrirCamera();
+  btnFoto.style.display="none";
+  btnVideo.style.display="block";
+}
+
+function modoTirinha(){
+  modo="tirinha";
+  trocarTela('tela3');
+  abrirCamera();
+  btnFoto.style.display="none";
+  btnVideo.style.display="none";
+  iniciarTirinha();
+}
+
+function iniciarTirinha(){
+  let i=3;
+  count.innerText=i;
+  let intervalo=setInterval(()=>{
+    i--;
+    if(i>0){count.innerText=i}
+    else{
+      clearInterval(intervalo);
+      count.innerText="";
+      capturarTirinha();
+    }
+  },1000);
+}
+
+function tirarFoto(){
+  const c=canvas,ctx=c.getContext('2d');
+  c.width=1080;c.height=1920;
+  ctx.drawImage(video,0,0,1080,1920);
+  mostrarDownload();
+}
+
+function capturarTirinha(){
+  const c=canvas,ctx=c.getContext('2d');
+  c.width=1080;c.height=1920;
+  let h=640;
+  for(let i=0;i<3;i++){
+    ctx.drawImage(video,0,0,1080,1920,40,i*h+20,1000,h-40);
+  }
+  mostrarDownload();
+}
+
+function gravarVideo(){
+  rec.style.display="block";
+  mediaRecorder=new MediaRecorder(stream);
+  mediaRecorder.ondataavailable=e=>chunks.push(e.data);
+  mediaRecorder.start();
+  setTimeout(()=>{
+    mediaRecorder.stop();
+    rec.style.display="none";
+    mostrarDownload();
+  },20000);
+}
+
+function mostrarDownload(){btnBaixar.style.display="block"}
+
+function baixar(){
+  const link=document.createElement('a');
+  link.download='memoria.png';
+  link.href=canvas.toDataURL();
+  link.click();
+}
+</script>
+
+</body>
+</html>
