@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memórias de um Dia Especial</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&display=swap');
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body, html {
+  width: 100%;
+  height: 100%;
+  font-family: 'Cinzel', serif;
+  background: #000;
+  overflow: hidden;
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  background-size: cover;
+  background-position: center;
+}
+
+.screen.active { display: flex; }
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.35);
+}
+
+.center {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 420px;
+  padding: 20px;
+  text-align: center;
+}
+
+.btn {
+  width: 100%;
+  margin: 10px 0;
+  padding: 14px;
+  border-radius: 30px;
+  background: linear-gradient(145deg,#f3e1c6,#e8cfaa);
+  border: 2px solid #fff;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+video, canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.controls {
+  position: absolute;
+  bottom: 20px;
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  z-index: 5;
+}
+
+.counter {
+  position: absolute;
+  top: 40%;
+  width: 100%;
+  text-align: center;
+  font-size: 80px;
+  color: white;
+  z-index: 6;
+}
+
+.hidden { display: none; }
+</style>
+</head>
+
+<body>
+
+<!-- TELA 1 / CAPA -->
+<div class="screen active" id="telaCapa" style="background-image:url('capa.png')">
+  <div class="overlay"></div>
+  <div class="center">
+    <button class="btn" onclick="abrirMenu()">Inicie Memórias</button>
+  </div>
+</div>
+
+<!-- TELA 2 / MENU -->
+<div class="screen" id="telaMenu" style="background-image:url('capa.png')">
+  <div class="overlay"></div>
+  <div class="center">
+    <button class="btn" onclick="modoFoto()">📸 FOTO</button>
+    <button class="btn" onclick="modoTirinha()">🖼️ TIRINHA</button>
+    <button class="btn" onclick="modoVideo()">🎥 VÍDEO</button>
+  </div>
+</div>
+
+<!-- TELA CAMERA -->
+<div class="screen" id="telaCamera">
+  <video id="video" autoplay playsinline></video>
+  <canvas id="canvas"></canvas>
+  <div class="counter hidden" id="contador">3</div>
+
+  <div class="controls">
+    <button class="btn" onclick="capturarFoto()">Tirar Foto</button>
+    <button class="btn" onclick="trocarCamera()">Trocar Câmera</button>
+    <button class="btn" onclick="parar()">Parar</button>
+    <button class="btn" onclick="baixar()">Baixar</button>
+    <button class="btn" onclick="compartilharWhats()">WhatsApp</button>
+    <button class="btn" onclick="compartilharDrive()">Drive</button>
+  </div>
+</div>
+
+<script>
+let stream;
+let facing = "user";
+let modo = "";
+let tirinhas = [];
+
+function mostrar(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function abrirMenu(){ mostrar('telaMenu'); }
+
+async function iniciarCamera(){
+  stream = await navigator.mediaDevices.getUserMedia({
+    video:{ facingMode: facing, width:1080, height:1920 },
+    audio: modo==="video"
+  });
+  video.srcObject = stream;
+}
+
+function modoFoto(){
+  modo="foto";
+  mostrar('telaCamera');
+  iniciarCamera();
+}
+
+function modoVideo(){
+  modo="video";
+  mostrar('telaCamera');
+  iniciarCamera();
+}
+
+function modoTirinha(){
+  modo="tirinha";
+  tirinhas=[];
+  mostrar('telaCamera');
+  iniciarCamera();
+  iniciarContagem();
+}
+
+function iniciarContagem(){
+  let c=3;
+  contador.classList.remove('hidden');
+  contador.innerText=c;
+  let i=setInterval(()=>{
+    c--;
+    contador.innerText=c;
+    if(c===0){
+      clearInterval(i);
+      contador.classList.add('hidden');
+      capturarFoto();
+      setTimeout(()=>capturarFoto(),1000);
+      setTimeout(()=>capturarFoto(),2000);
+    }
+  },1000);
+}
+
+function capturarFoto(){
+  const ctx=canvas.getContext('2d');
+  canvas.width=1080;
+  canvas.height=1920;
+  ctx.drawImage(video,0,0,1080,1920);
+
+  let moldura=new Image();
+  moldura.src="moldura.png";
+  moldura.onload=()=>{
+    ctx.drawImage(moldura,0,0,1080,1920);
+    if(modo==="tirinha"){
+      tirinhas.push(canvas.toDataURL("image/png"));
+    }
+  };
+}
+
+function baixar(){
+  let a=document.createElement('a');
+  a.href=canvas.toDataURL("image/png");
+  a.download="memoria.png";
+  a.click();
+}
+
+function compartilharWhats(){
+  baixar();
+}
+
+function compartilharDrive(){
+  baixar();
+}
+
+function trocarCamera(){
+  facing = facing==="user" ? "environment" : "user";
+  parar();
+  iniciarCamera();
+}
+
+function parar(){
+  if(stream){
+    stream.getTracks().forEach(t=>t.stop());
+  }
+  mostrar('telaMenu');
+}
+</script>
+
+</body>
+</html>
