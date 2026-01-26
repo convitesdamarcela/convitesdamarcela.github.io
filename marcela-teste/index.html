@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Memórias de um Dia Especial</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;font-family:'Cinzel',serif;background:#000}
+
+#app{position:relative;width:100%;height:100vh;overflow:hidden}
+
+/* CAPA */
+.capa{
+  position:absolute;inset:0;
+  background:url("capa.png") center/cover no-repeat;
+  z-index:1;
+}
+
+/* OVERLAY PADRÃO */
+.overlay{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;
+  justify-content:center;align-items:center;
+  gap:14px;z-index:5;
+}
+
+/* BOTÕES */
+.botao{
+  padding:12px 22px;
+  border-radius:999px;
+  border:2px solid #fff;
+  background:linear-gradient(135deg,#f2e6d9,#e6d1bb);
+  color:#000;
+  font-size:14px;
+  cursor:pointer;
+  min-width:190px;
+}
+
+/* CAMERA */
+video{
+  position:absolute;inset:0;
+  width:100%;height:100%;
+  object-fit:cover;
+  z-index:2;
+}
+
+/* MOLDURA */
+.moldura{
+  position:absolute;inset:0;
+  width:100%;height:100%;
+  pointer-events:none;
+  z-index:4;
+}
+
+/* CONTAGEM */
+#countdown{
+  position:absolute;inset:0;
+  display:flex;justify-content:center;align-items:center;
+  font-size:90px;color:#fff;
+  background:rgba(0,0,0,.6);
+  z-index:10;
+}
+
+.hidden{display:none}
+
+/* MENU INFERIOR */
+.menu{
+  position:absolute;bottom:20px;left:0;right:0;
+  display:flex;justify-content:center;gap:10px;
+  z-index:6;
+}
+
+/* REC */
+#rec{
+  position:absolute;top:20px;right:20px;
+  color:red;font-size:14px;font-weight:bold;
+  z-index:8;
+}
+</style>
+</head>
+
+<body>
+<div id="app">
+
+  <div class="capa"></div>
+
+  <!-- TELA 1 -->
+  <div class="overlay" id="tela1">
+    <button class="botao" onclick="abrirMenu()">Inicie Memórias</button>
+  </div>
+
+  <!-- TELA 2 -->
+  <div class="overlay hidden" id="tela2">
+    <button class="botao" onclick="modoFoto()">📸 Foto</button>
+    <button class="botao" onclick="modoTirinha()">🎞 Tirinha</button>
+    <button class="botao" onclick="modoVideo()">🎥 Vídeo</button>
+  </div>
+
+  <video id="video" autoplay playsinline muted class="hidden"></video>
+  <img src="moldura.png" class="moldura hidden">
+
+  <div id="rec" class="hidden">● REC</div>
+  <div id="countdown" class="hidden">3</div>
+
+  <div class="menu hidden" id="menuAcao">
+    <button class="botao" id="btnAcao"></button>
+    <button class="botao" onclick="trocarCamera()">🔄 Câmera</button>
+  </div>
+
+</div>
+
+<script>
+let stream, facing="user", recorder, chunks=[];
+const video=document.getElementById("video");
+const moldura=document.querySelector(".moldura");
+const cd=document.getElementById("countdown");
+const menu=document.getElementById("menuAcao");
+const btn=document.getElementById("btnAcao");
+const rec=document.getElementById("rec");
+
+function abrirMenu(){
+  document.getElementById("tela1").classList.add("hidden");
+  document.getElementById("tela2").classList.remove("hidden");
+}
+
+async function abrirCamera(){
+  if(stream) stream.getTracks().forEach(t=>t.stop());
+  stream=await navigator.mediaDevices.getUserMedia({
+    video:{facingMode:facing,width:{ideal:1920},height:{ideal:1080}},
+    audio:true
+  });
+  video.srcObject=stream;
+  video.classList.remove("hidden");
+  moldura.classList.remove("hidden");
+}
+
+function trocarCamera(){
+  facing = facing==="user" ? "environment" : "user";
+  abrirCamera();
+}
+
+/* FOTO */
+async function modoFoto(){
+  document.getElementById("tela2").classList.add("hidden");
+  await abrirCamera();
+  menu.classList.remove("hidden");
+  btn.innerText="📸 Tirar Foto";
+  btn.onclick=capturarFoto;
+}
+
+/* FOTO SIMPLES */
+function capturarFoto(){
+  const c=document.createElement("canvas");
+  c.width=1080;c.height=1920;
+  const ctx=c.getContext("2d");
+
+  const vw=video.videoWidth,vh=video.videoHeight;
+  const ratio=Math.min(vw/1080,vh/1920);
+  const sw=1080*ratio,sh=1920*ratio;
+  const sx=(vw-sw)/2,sy=(vh-sh)/2;
+
+  ctx.drawImage(video,sx,sy,sw,sh,0,0,1080,1920);
+
+  const img=new Image();
+  img.src="moldura.png";
+  img.onload=()=>{
+    ctx.drawImage(img,0,0,1080,1920);
+    download(c.toDataURL("image/png"),"foto.png");
+  }
+}
+
+/* TIRINHA */
+async function modoTirinha(){
+  document.getElementById("tela2").classList.add("hidden");
+  await abrirCamera();
+  iniciarTirinha();
+}
+
+async function iniciarTirinha(){
+  const fotos=[];
+  for(let i=0;i<3;i++){
+    await contagem();
+    fotos.push(capturarFrame());
+  }
+  montarTirinha(fotos);
+}
+
+function contagem(){
+  return new Promise(r=>{
+    let n=3;cd.innerText=n;cd.classList.remove("hidden");
+    const i=setInterval(()=>{
+      n--; if(n===0){clearInterval(i);cd.classList.add("hidden");r();}
+      else cd.innerText=n;
+    },1000);
+  });
+}
+
+function capturarFrame(){
+  const c=document.createElement("canvas");
+  c.width=1080;c.height=640;
+  const ctx=c.getContext("2d");
+
+  const vw=video.videoWidth,vh=video.videoHeight;
+  const ratio=Math.min(vw/1080,vh/640);
+  const sw=1080*ratio,sh=640*ratio;
+  const sx=(vw-sw)/2,sy=(vh-sh)/2;
+
+  ctx.drawImage(video,sx,sy,sw,sh,0,0,1080,640);
+  return c;
+}
+
+function montarTirinha(fotos){
+  const c=document.createElement("canvas");
+  c.width=1080;c.height=1920;
+  const ctx=c.getContext("2d");
+  ctx.fillStyle="#fff";ctx.fillRect(0,0,1080,1920);
+
+  fotos.forEach((f,i)=>ctx.drawImage(f,0, i*640));
+
+  const img=new Image();
+  img.src="moldura.png";
+  img.onload=()=>{
+    ctx.drawImage(img,0,0,1080,1920);
+    download(c.toDataURL("image/png"),"tirinha.png");
+  }
+}
+
+/* VÍDEO */
+async function modoVideo(){
+  document.getElementById("tela2").classList.add("hidden");
+  await abrirCamera();
+  menu.classList.remove("hidden");
+  btn.innerText="🎥 Gravar Vídeo";
+  btn.onclick=gravarVideo;
+}
+
+function gravarVideo(){
+  chunks=[];
+  recorder=new MediaRecorder(stream,{mimeType:"video/webm"});
+  recorder.ondataavailable=e=>chunks.push(e.data);
+  recorder.onstop=()=>{
+    const blob=new Blob(chunks,{type:"video/webm"});
+    download(URL.createObjectURL(blob),"video.webm");
+  };
+  recorder.start();
+  rec.classList.remove("hidden");
+  setTimeout(()=>{recorder.stop();rec.classList.add("hidden");},20000);
+}
+
+/* DOWNLOAD */
+function download(url,nome){
+  const a=document.createElement("a");
+  a.href=url;a.download=nome;a.click();
+}
+</script>
+
+</body>
+</html>
