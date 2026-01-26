@@ -1,0 +1,85 @@
+<script>
+let tirinhaFotos = [];
+let tirinhaIndex = 0;
+
+const TIRINHA_TOTAL = 3;
+const canvasFinal = document.createElement("canvas");
+canvasFinal.width = 1080;
+canvasFinal.height = 1920;
+const ctxFinal = canvasFinal.getContext("2d");
+
+const molduraImg = new Image();
+molduraImg.src = "moldura.png"; // SUA MOLDURA PNG
+
+function iniciarTirinha() {
+  tirinhaFotos = [];
+  tirinhaIndex = 0;
+  capturarTirinha();
+}
+
+function capturarTirinha() {
+  if (tirinhaIndex >= TIRINHA_TOTAL) {
+    montarTirinhaFinal();
+    return;
+  }
+
+  iniciarContagem(3, () => {
+    tirarFotoTirinha();
+    tirinhaIndex++;
+    setTimeout(capturarTirinha, 700);
+  });
+}
+
+function tirarFotoTirinha() {
+  const canvasTemp = document.createElement("canvas");
+  canvasTemp.width = video.videoWidth;
+  canvasTemp.height = video.videoHeight;
+  const ctx = canvasTemp.getContext("2d");
+  ctx.drawImage(video, 0, 0);
+  tirinhaFotos.push(canvasTemp);
+}
+
+function montarTirinhaFinal() {
+  const alturaParte = canvasFinal.height / 3;
+
+  tirinhaFotos.forEach((foto, index) => {
+    ctxFinal.drawImage(
+      foto,
+      0,
+      index * alturaParte,
+      canvasFinal.width,
+      alturaParte
+    );
+  });
+
+  molduraImg.onload = () => {
+    ctxFinal.drawImage(molduraImg, 0, 0, 1080, 1920);
+    imagemFinal = canvasFinal.toDataURL("image/png");
+    mostrarResultado(imagemFinal);
+  };
+}
+
+function iniciarContagem(segundos, callback) {
+  let contador = segundos;
+  contadorOverlay.style.display = "flex";
+  contadorOverlay.innerText = contador;
+
+  const intervalo = setInterval(() => {
+    contador--;
+    if (contador <= 0) {
+      clearInterval(intervalo);
+      contadorOverlay.style.display = "none";
+      callback();
+    } else {
+      contadorOverlay.innerText = contador;
+    }
+  }, 1000);
+}
+
+function mostrarResultado(img) {
+  previewResultado.src = img;
+  previewResultado.style.display = "block";
+  botoesResultado.style.display = "flex";
+}
+
+</script>
