@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Memórias de um Dia Especial</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+* { box-sizing: border-box; font-family: 'Cinzel', serif; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+}
+
+.app {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+}
+
+/* CAPA */
+.capa {
+  position: absolute;
+  inset: 0;
+  background: url('capa.png') center/cover no-repeat;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn {
+  background: #f1ddc6;
+  border: 3px solid #fff;
+  border-radius: 40px;
+  padding: 14px 26px;
+  color: #000;
+  font-size: 16px;
+  margin: 8px 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.menu {
+  position: absolute;
+  inset: 0;
+  background: url('capa.png') center/cover no-repeat;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 120px;
+  gap: 12px;
+}
+
+.camera {
+  position: absolute;
+  inset: 0;
+  display: none;
+}
+
+video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.moldura {
+  position: absolute;
+  inset: 0;
+  background: url('moldura.png') center/contain no-repeat;
+  pointer-events: none;
+}
+
+.contagem {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 120px;
+  color: white;
+  background: rgba(0,0,0,.4);
+  display: none;
+}
+
+.controls {
+  position: absolute;
+  bottom: 20px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.tirinha-preview {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: #eee;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.tirinha-preview img {
+  width: 100%;
+  border: 8px solid white;
+  margin-bottom: 20px;
+}
+
+</style>
+</head>
+
+<body>
+<div class="app">
+
+  <!-- TELA 1 -->
+  <div class="capa" id="capa">
+    <button class="btn" onclick="abrirMenu()">Inicie Memórias</button>
+  </div>
+
+  <!-- TELA 2 -->
+  <div class="menu" id="menu">
+    <button class="btn" onclick="modoFoto()">📷 Foto</button>
+    <button class="btn" onclick="modoTirinha()">🎞 Tirinha</button>
+    <button class="btn" onclick="modoVideo()">🎥 Vídeo</button>
+  </div>
+
+  <!-- CÂMERA -->
+  <div class="camera" id="camera">
+    <video id="video" autoplay playsinline></video>
+    <div class="moldura"></div>
+
+    <div class="contagem" id="contagem">3</div>
+
+    <div class="controls">
+      <button class="btn" onclick="capturar()">Tirar Foto</button>
+      <button class="btn" onclick="pararVideo()">Parar</button>
+      <button class="btn" onclick="baixar()">⬇ Baixar</button>
+      <button class="btn" onclick="compartilhar()">📲 WhatsApp</button>
+    </div>
+  </div>
+
+  <!-- TIRINHA -->
+  <div class="tirinha-preview" id="tirinha"></div>
+
+</div>
+
+<canvas id="canvas" width="1080" height="1920" style="display:none"></canvas>
+
+<script>
+let stream;
+let modo = '';
+let fotos = [];
+
+async function abrirMenu() {
+  document.getElementById('capa').style.display = 'none';
+  document.getElementById('menu').style.display = 'flex';
+
+  if (screen.orientation?.lock) {
+    screen.orientation.lock('portrait').catch(()=>{});
+  }
+}
+
+async function iniciarCamera() {
+  stream = await navigator.mediaDevices.getUserMedia({
+    video: { width: 1920, height: 1080, facingMode: "user" },
+    audio: true
+  });
+  video.srcObject = stream;
+}
+
+function modoFoto() {
+  modo = 'foto';
+  document.getElementById('menu').style.display = 'none';
+  document.getElementById('camera').style.display = 'block';
+  iniciarCamera();
+}
+
+function modoVideo() {
+  modo = 'video';
+  document.getElementById('menu').style.display = 'none';
+  document.getElementById('camera').style.display = 'block';
+  iniciarCamera();
+}
+
+function modoTirinha() {
+  modo = 'tirinha';
+  fotos = [];
+  document.getElementById('menu').style.display = 'none';
+  document.getElementById('camera').style.display = 'block';
+  iniciarCamera();
+  iniciarContagem();
+}
+
+function iniciarContagem() {
+  let n = 3;
+  contagem.style.display = 'flex';
+  contagem.innerText = n;
+  let intervalo = setInterval(() => {
+    n--;
+    contagem.innerText = n;
+    if (n === 0) {
+      capturar();
+      if (fotos.length < 3) {
+        n = 3;
+      } else {
+        clearInterval(intervalo);
+        contagem.style.display = 'none';
+        mostrarTirinha();
+      }
+    }
+  }, 1000);
+}
+
+function capturar() {
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, 1080, 1920);
+  const img = canvas.toDataURL('image/jpeg', 0.95);
+  if (modo === 'tirinha') fotos.push(img);
+  window.ultimaImagem = img;
+}
+
+function mostrarTirinha() {
+  document.getElementById('camera').style.display = 'none';
+  const div = document.getElementById('tirinha');
+  div.innerHTML = fotos.map(f => `<img src="${f}">`).join('');
+  div.style.display = 'block';
+}
+
+function baixar() {
+  const a = document.createElement('a');
+  a.href = window.ultimaImagem;
+  a.download = 'memoria.jpg';
+  a.click();
+}
+
+function compartilhar() {
+  if (navigator.share) {
+    navigator.share({ files: [] });
+  } else {
+    alert('Compartilhe manualmente 😉');
+  }
+}
+
+function pararVideo() {
+  stream.getTracks().forEach(t => t.stop());
+}
+</script>
+</body>
+</html>
+
