@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Memórias de um Dia Especial</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&display=swap" rel="stylesheet">
+
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: 'Cinzel', serif;
+  background: #000;
+}
+
+/* ---------- CORES ---------- */
+:root{
+  --nude: linear-gradient(135deg,#f3e6d8,#e8d3b8);
+  --branco: #ffffff;
+  --preto: #000000;
+}
+
+/* ---------- BOTÕES ---------- */
+.btn {
+  background: var(--nude);
+  border: 2px solid var(--branco);
+  color: var(--preto);
+  border-radius: 999px;
+  padding: 16px 26px;
+  font-size: 16px;
+  margin: 6px;
+  min-width: 70%;
+  cursor: pointer;
+}
+
+.btn-small {
+  min-width: auto;
+  padding: 10px 18px;
+  font-size: 14px;
+}
+
+/* ---------- CAPA ---------- */
+#capa {
+  position: fixed;
+  inset: 0;
+  background: #111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+#btnStart {
+  font-size: 20px;
+}
+
+/* ---------- APP ---------- */
+#app {
+  position: fixed;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+#cameraBox {
+  position: absolute;
+  inset: 0;
+}
+
+video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+#moldura {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  pointer-events: none;
+}
+
+/* ---------- CONTADOR ---------- */
+#contador {
+  position: absolute;
+  top: 40%;
+  width: 100%;
+  text-align: center;
+  font-size: 90px;
+  color: #fff;
+  display: none;
+}
+
+/* ---------- MENU ---------- */
+#menu {
+  background: rgba(0,0,0,0.5);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ---------- GRAVAÇÃO ---------- */
+#rec {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  width: 18px;
+  height: 18px;
+  background: red;
+  border-radius: 50%;
+  display: none;
+}
+</style>
+</head>
+
+<body>
+
+<!-- CAPA -->
+<div id="capa">
+  <button id="btnStart" class="btn">Inicie Memórias</button>
+</div>
+
+<!-- APP -->
+<div id="app">
+
+  <div id="cameraBox">
+    <video id="video" playsinline muted></video>
+    <div id="moldura"></div>
+    <div id="contador">3</div>
+    <div id="rec"></div>
+  </div>
+
+  <div id="menu">
+    <button class="btn" onclick="foto()">📷 Foto</button>
+    <button class="btn" onclick="tirinha()">🎞️ Tirinha</button>
+    <button class="btn" onclick="video()">🎥 Vídeo</button>
+    <button class="btn btn-small" onclick="trocarCamera()">🔄 Câmera</button>
+    <button class="btn btn-small" onclick="alternarOrientacao()">↔️ Paisagem</button>
+    <button class="btn" onclick="baixar()">⬇️ Baixar</button>
+    <button class="btn btn-small" onclick="enviarWhats()">📤 WhatsApp</button>
+    <button class="btn btn-small" onclick="enviarDrive()">📁 Drive</button>
+  </div>
+
+</div>
+
+<script>
+let stream, facing="user", orientacao="portrait", fotos=[], gravando=false, mediaRecorder, chunks=[];
+
+const videoEl = document.getElementById("video");
+const contador = document.getElementById("contador");
+const rec = document.getElementById("rec");
+
+document.getElementById("btnStart").onclick = async ()=>{
+  document.getElementById("capa").style.display="none";
+  document.getElementById("app").style.display="flex";
+  await iniciarCamera();
+};
+
+async function iniciarCamera(){
+  if(stream) stream.getTracks().forEach(t=>t.stop());
+  stream = await navigator.mediaDevices.getUserMedia({
+    video:{facingMode:facing,width:{ideal:1920},height:{ideal:1080}},
+    audio:true
+  });
+  videoEl.srcObject = stream;
+  videoEl.play();
+}
+
+function trocarCamera(){
+  facing = facing==="user"?"environment":"user";
+  iniciarCamera();
+}
+
+function alternarOrientacao(){
+  orientacao = orientacao==="portrait"?"landscape":"portrait";
+}
+
+function countdown(){
+  return new Promise(res=>{
+    let n=3;
+    contador.style.display="block";
+    contador.textContent=n;
+    let i=setInterval(()=>{
+      n--;
+      if(n<=0){
+        clearInterval(i);
+        contador.style.display="none";
+        res();
+      } else contador.textContent=n;
+    },1000);
+  });
+}
+
+async function foto(){
+  fotos=[];
+  await countdown();
+  capturar();
+}
+
+async function tirinha(){
+  fotos=[];
+  for(let i=0;i<3;i++){
+    await countdown();
+    capturar();
+  }
+}
+
+function capturar(){
+  const c=document.createElement("canvas");
+  const ratio=videoEl.videoWidth/videoEl.videoHeight;
+  const h=1080, w=Math.round(h*ratio);
+  c.width=w; c.height=h;
+  c.getContext("2d").drawImage(videoEl,0,0,w,h);
+  fotos.push(c);
+}
+
+function baixar(){
+  if(fotos.length===0) return;
+  let c=document.createElement("canvas");
+  if(fotos.length===1){
+    c=fotos[0];
+  } else {
+    c.width=fotos[0].width;
+    c.height=fotos[0].height*3;
+    let ctx=c.getContext("2d");
+    fotos.forEach((f,i)=>ctx.drawImage(f,0,i*f.height));
+  }
+  let a=document.createElement("a");
+  a.href=c.toDataURL("image/png");
+  a.download="memorias.png";
+  a.click();
+}
+
+function video(){
+  if(gravando){
+    mediaRecorder.stop();
+    gravando=false;
+    rec.style.display="none";
+  } else {
+    chunks=[];
+    mediaRecorder=new MediaRecorder(stream);
+    mediaRecorder.ondataavailable=e=>chunks.push(e.data);
+    mediaRecorder.onstop=()=>{
+      let blob=new Blob(chunks,{type:"video/mp4"});
+      let a=document.createElement("a");
+      a.href=URL.createObjectURL(blob);
+      a.download="video.mp4";
+      a.click();
+    };
+    mediaRecorder.start();
+    gravando=true;
+    rec.style.display="block";
+    setTimeout(()=>{ if(gravando) video(); },20000);
+  }
+}
+
+function enviarWhats(){
+  let msg=prompt("Mensagem para o anfitrião:");
+  if(msg) window.open("https://wa.me/?text="+encodeURIComponent(msg));
+}
+
+function enviarDrive(){
+  let link=prompt("Cole o link do Google Drive:");
+  if(link) window.open(link);
+}
+</script>
+
+</body>
+</html>
