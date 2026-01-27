@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memórias – Versão Premium</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&display=swap');
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:'Cinzel', serif;
+  background:#fff;
+  text-align:center;
+}
+
+.screen{
+  display:none;
+  min-height:100vh;
+  padding:20px;
+}
+
+.active{display:block}
+
+h1{font-size:26px;margin-top:60px}
+p{margin-bottom:40px}
+
+.btn{
+  background:linear-gradient(145deg,#f3e1c8,#ead3b0);
+  border:2px solid #fff;
+  border-radius:40px;
+  padding:14px 26px;
+  margin:10px auto;
+  width:80%;
+  max-width:320px;
+  font-size:16px;
+  cursor:pointer;
+}
+
+video, canvas{
+  width:100%;
+  max-width:360px;
+  aspect-ratio:9/16;
+  border-radius:18px;
+}
+
+.controls{
+  margin-top:15px;
+}
+
+.frame{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+}
+
+.countdown{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:90px;
+  color:white;
+  background:rgba(0,0,0,0.3);
+}
+
+.strip-preview img{
+  width:100%;
+  max-width:360px;
+  margin-top:10px;
+}
+</style>
+</head>
+
+<body>
+
+<div id="home" class="screen active">
+  <h1>Registre esse momento!</h1>
+  <p>Clique para iniciar</p>
+  <div class="btn" onclick="startMode('photo')">📸 FOTO</div>
+  <div class="btn" onclick="startMode('strip')">🖼️ TIRINHA</div>
+  <div class="btn" onclick="startMode('video')">🎥 VÍDEO</div>
+</div>
+
+<div id="camera" class="screen">
+  <video id="video" autoplay playsinline></video>
+  <canvas id="canvas" hidden></canvas>
+  <div id="countdown" class="countdown" hidden></div>
+
+  <div class="controls">
+    <div class="btn" id="actionBtn">Tirar Foto</div>
+    <div class="btn" onclick="switchCamera()">Trocar Câmera</div>
+    <div class="btn" onclick="stopAll()">Parar</div>
+    <div class="btn" onclick="downloadImage()">⬇ Baixar</div>
+    <div class="btn" onclick="shareWhats()">📲 WhatsApp</div>
+  </div>
+
+  <div class="strip-preview" id="stripPreview"></div>
+</div>
+
+<script>
+let stream;
+let mode='photo';
+let facing='user';
+let stripShots=[];
+let recordedBlob;
+
+async function startCamera(){
+  if(stream) stream.getTracks().forEach(t=>t.stop());
+  stream = await navigator.mediaDevices.getUserMedia({
+    video:{facingMode:facing, aspectRatio:9/16},
+    audio: mode==='video'
+  });
+  video.srcObject = stream;
+}
+
+function startMode(m){
+  mode=m;
+  document.getElementById('home').classList.remove('active');
+  document.getElementById('camera').classList.add('active');
+  document.getElementById('actionBtn').innerText =
+    mode==='video'?'Iniciar Gravação': mode==='strip'?'Iniciar Tirinha':'Tirar Foto';
+  startCamera();
+}
+
+function switchCamera(){
+  facing = facing==='user'?'environment':'user';
+  startCamera();
+}
+
+function stopAll(){
+  if(stream) stream.getTracks().forEach(t=>t.stop());
+  location.reload();
+}
+
+function countdown(sec){
+  return new Promise(res=>{
+    const el=document.getElementById('countdown');
+    el.hidden=false;
+    let c=sec;
+    el.innerText=c;
+    const i=setInterval(()=>{
+      c--;
+      if(c<=0){
+        clearInterval(i);
+        el.hidden=true;
+        res();
+      } else el.innerText=c;
+    },1000);
+  });
+}
+
+async function takePhoto(){
+  await countdown(3);
+  const c=canvas;
+  c.width=video.videoWidth;
+  c.height=video.videoHeight;
+  c.getContext('2d').drawImage(video,0,0);
+  return c.toDataURL('image/png');
+}
+
+document.getElementById('actionBtn').onclick=async()=>{
+  if(mode==='photo'){
+    recordedBlob = await takePhoto();
+  }
+  else if(mode==='strip'){
+    stripShots=[];
+    for(let i=0;i<3;i++){
+      stripShots.push(await takePhoto());
+    }
+    makeStrip();
+  }
+  else if(mode==='video'){
+    startRecording();
+  }
+};
+
+function makeStrip(){
+  const imgs = stripShots.map(src=>{
+    const i=new Image(); i.src=src; return i;
+  });
+  const w=imgs[0].width, h=imgs[0].height*3;
+  canvas.width=w; canvas.height=h;
+  const ctx=canvas.getContext('2d');
+  imgs.forEach((img,i)=>ctx.drawImage(img,0,i*img.height));
+  recordedBlob = canvas.toDataURL('image/png');
+  stripPreview.innerHTML='<img src="'+recordedBlob+'">';
+}
+
+function downloadImage(){
+  if(!recordedBlob) return;
+  const a=document.createElement('a');
+  a.href=recordedBlob;
+  a.download='memoria.png';
+  a.click();
+}
+
+function shareWhats(){
+  if(!recordedBlob) return;
+  window.open('https://wa.me/?text=Minha%20memória%20especial');
+}
+
+let recorder;
+function startRecording(){
+  recorder = new MediaRecorder(stream);
+  let chunks=[];
+  recorder.ondataavailable=e=>chunks.push(e.data);
+  recorder.onstop=()=>{
+    recordedBlob = URL.createObjectURL(new Blob(chunks,{type:'video/mp4'}));
+  };
+  recorder.start();
+  actionBtn.innerText='Parar Gravação';
+  actionBtn.onclick=()=>{recorder.stop();};
+}
+</script>
+
+</body>
+</html>
