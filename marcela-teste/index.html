@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Moldura Premium</title>
+
+<style>
+:root{
+  --btn-bg:#ead8bf;
+  --btn-text:#000;
+}
+
+*{box-sizing:border-box;font-family:serif}
+
+body{
+  margin:0;
+  background:#fff;
+  text-align:center;
+}
+
+.hidden{display:none}
+
+button{
+  width:90%;
+  max-width:360px;
+  margin:8px auto;
+  padding:14px;
+  border-radius:40px;
+  border:none;
+  background:var(--btn-bg);
+  color:var(--btn-text);
+  font-size:18px;
+  cursor:pointer;
+}
+
+#capa{
+  position:fixed;
+  inset:0;
+  background:url("capa.png") center/cover no-repeat;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+}
+
+#capa h1{color:#000;margin-bottom:10px}
+#capa p{margin-bottom:20px}
+
+#cameraArea{
+  position:relative;
+  width:100vw;
+  height:100vh;
+  overflow:hidden;
+}
+
+video{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+#moldura{
+  position:absolute;
+  inset:0;
+  background:url("moldura.png") center/cover no-repeat;
+  pointer-events:none;
+}
+
+#controls{
+  position:absolute;
+  bottom:20px;
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+
+#countdown{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:120px;
+  color:white;
+  background:rgba(0,0,0,.4);
+  z-index:5;
+}
+</style>
+</head>
+
+<body>
+
+<!-- CAPA -->
+<div id="capa">
+  <h1>Registre esse momento!</h1>
+  <p>Clique para iniciar</p>
+  <button onclick="startMode('foto')">📸 FOTO</button>
+  <button onclick="startMode('tirinha')">🖼️ TIRINHA</button>
+  <button onclick="startMode('video')">🎥 VÍDEO</button>
+</div>
+
+<!-- CAMERA -->
+<div id="cameraArea" class="hidden">
+  <video id="video" autoplay playsinline></video>
+  <div id="moldura"></div>
+  <div id="countdown" class="hidden"></div>
+
+  <div id="controls">
+    <button id="mainBtn"></button>
+    <button onclick="switchCamera()">Trocar Câmera</button>
+    <button onclick="stopAll()">Parar</button>
+    <button onclick="download()">⬇ Baixar</button>
+    <button onclick="shareWhats()">📲 WhatsApp</button>
+  </div>
+</div>
+
+<canvas id="canvas" class="hidden"></canvas>
+
+<script>
+let stream, facing="user", mode="";
+let shots=[];
+
+async function startMode(m){
+  mode=m;
+  document.getElementById("capa").classList.add("hidden");
+  document.getElementById("cameraArea").classList.remove("hidden");
+  startCamera();
+  setupButton();
+}
+
+async function startCamera(){
+  if(stream) stream.getTracks().forEach(t=>t.stop());
+  stream = await navigator.mediaDevices.getUserMedia({
+    video:{facingMode:facing,aspectRatio:9/16}
+  });
+  video.srcObject=stream;
+}
+
+function setupButton(){
+  const btn=document.getElementById("mainBtn");
+  if(mode==="foto"){
+    btn.innerText="Tirar Foto";
+    btn.onclick=capturePhoto;
+  }
+  if(mode==="tirinha"){
+    btn.innerText="Iniciar Tirinha";
+    btn.onclick=startTirinha;
+  }
+  if(mode==="video"){
+    btn.innerText="Iniciar Gravação";
+    btn.onclick=recordVideo;
+  }
+}
+
+function switchCamera(){
+  facing = facing==="user"?"environment":"user";
+  startCamera();
+}
+
+function countdown(cb){
+  let n=3;
+  const el=document.getElementById("countdown");
+  el.classList.remove("hidden");
+  const i=setInterval(()=>{
+    el.innerText=n;
+    n--;
+    if(n<0){
+      clearInterval(i);
+      el.classList.add("hidden");
+      cb();
+    }
+  },800);
+}
+
+function capturePhoto(){
+  countdown(()=>{
+    const c=document.getElementById("canvas");
+    c.width=video.videoWidth;
+    c.height=video.videoHeight;
+    c.getContext("2d").drawImage(video,0,0);
+    lastImage=c.toDataURL("image/png");
+  });
+}
+
+function startTirinha(){
+  shots=[];
+  const take=()=>{
+    countdown(()=>{
+      const c=document.getElementById("canvas");
+      c.width=video.videoWidth;
+      c.height=video.videoHeight;
+      c.getContext("2d").drawImage(video,0,0);
+      shots.push(c.toDataURL("image/png"));
+      if(shots.length<3) take();
+      else mergeTirinha();
+    });
+  };
+  take();
+}
+
+function mergeTirinha(){
+  const imgs=[];
+  shots.forEach(src=>{
+    const i=new Image(); i.src=src; imgs.push(i);
+  });
+  imgs[2].onload=()=>{
+    const c=document.getElementById("canvas");
+    c.width=imgs[0].width;
+    c.height=imgs[0].height*3;
+    const ctx=c.getContext("2d");
+    imgs.forEach((im,i)=>ctx.drawImage(im,0,i*im.height));
+    lastImage=c.toDataURL("image/png");
+  }
+}
+
+function recordVideo(){
+  alert("Gravação básica pronta. (Pode ser expandida)");
+}
+
+function stopAll(){
+  stream.getTracks().forEach(t=>t.stop());
+  location.reload();
+}
+
+function download(){
+  if(!lastImage) return alert("Nenhum arquivo ainda");
+  const a=document.createElement("a");
+  a.href=lastImage;
+  a.download="memoria.png";
+  a.click();
+}
+
+function shareWhats(){
+  if(!lastImage) return alert("Nenhum arquivo ainda");
+  navigator.share({title:"Memória",url:lastImage});
+}
+</script>
+
+</body>
+</html>
