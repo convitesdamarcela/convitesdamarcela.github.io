@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Moldura Premium</title>
+
+<style>
+html, body {
+    margin: 0;
+    padding: 0;
+    background: #f2f2f2;
+    font-family: 'Georgia', serif;
+}
+
+.hidden { display: none; }
+
+#capa {
+    position: fixed;
+    inset: 0;
+    background: url('CAPA.png') center/cover no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+#capa button {
+    padding: 18px 40px;
+    font-size: 18px;
+    border-radius: 30px;
+    border: none;
+    background: #e8d9c3;
+}
+
+#camera {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+#moldura {
+    position: absolute;
+    inset: 0;
+    background: url('MOLDURA.png') center/contain no-repeat;
+    pointer-events: none;
+}
+
+.controls {
+    position: fixed;
+    bottom: 20px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+}
+
+.controls button {
+    width: 80%;
+    padding: 14px;
+    border-radius: 25px;
+    border: none;
+    background: #d9c8aa;
+    font-size: 16px;
+}
+
+#countdown {
+    position: fixed;
+    top: 20px;
+    width: 100%;
+    text-align: center;
+    font-size: 28px;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 0 0 5px #000;
+}
+</style>
+</head>
+
+<body>
+
+<div id="capa">
+    <button onclick="iniciar()">INICIAR</button>
+</div>
+
+<div id="camera" class="hidden">
+    <div id="countdown" class="hidden">3</div>
+    <video id="video" autoplay playsinline></video>
+    <div id="moldura"></div>
+</div>
+
+<div class="controls hidden" id="controls">
+    <button onclick="foto()">📸 FOTO</button>
+    <button onclick="tirinha()">🖼️ TIRINHA</button>
+    <button onclick="gravar()">🎥 VÍDEO</button>
+    <button onclick="trocar()">🔄 TROCAR CÂMERA</button>
+    <button onclick="baixar()">⬇️ BAIXAR</button>
+    <button onclick="whatsapp()">📲 WHATSAPP</button>
+</div>
+
+<script>
+let stream;
+let facing = 'user';
+let mediaRecorder;
+let recordedChunks = [];
+let finalBlob;
+
+async function iniciar() {
+    document.getElementById('capa').style.display = 'none';
+    document.getElementById('camera').classList.remove('hidden');
+    document.getElementById('controls').classList.remove('hidden');
+    await startCamera();
+}
+
+async function startCamera() {
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing }, audio: true });
+    document.getElementById('video').srcObject = stream;
+}
+
+function trocar() {
+    facing = facing === 'user' ? 'environment' : 'user';
+    startCamera();
+}
+
+function countdown(callback) {
+    let c = 3;
+    const el = document.getElementById('countdown');
+    el.classList.remove('hidden');
+    el.textContent = c;
+    const i = setInterval(() => {
+        c--;
+        if (c === 0) {
+            clearInterval(i);
+            el.classList.add('hidden');
+            callback();
+        } else {
+            el.textContent = c;
+        }
+    }, 1000);
+}
+
+function foto() {
+    countdown(() => {
+        const canvas = document.createElement('canvas');
+        const v = document.getElementById('video');
+        canvas.width = v.videoWidth;
+        canvas.height = v.videoHeight;
+        canvas.getContext('2d').drawImage(v, 0, 0);
+        canvas.toBlob(b => finalBlob = b, 'image/png');
+    });
+}
+
+function tirinha() {
+    countdown(async () => {
+        const v = document.getElementById('video');
+        const canvas = document.createElement('canvas');
+        canvas.width = v.videoWidth;
+        canvas.height = v.videoHeight * 3;
+        const ctx = canvas.getContext('2d');
+
+        for (let i = 0; i < 3; i++) {
+            ctx.drawImage(v, 0, i * v.videoHeight);
+            await new Promise(r => setTimeout(r, 800));
+        }
+
+        canvas.toBlob(b => finalBlob = b, 'image/png');
+    });
+}
+
+function gravar() {
+    recordedChunks = [];
+    mediaRecorder = new MediaRecorder(stream);
+    mediaRecorder.ondataavailable = e => recordedChunks.push(e.data);
+    mediaRecorder.onstop = () => finalBlob = new Blob(recordedChunks, { type: 'video/webm' });
+    mediaRecorder.start();
+}
+
+function baixar() {
+    if (!finalBlob) return alert('Nenhum arquivo gerado');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(finalBlob);
+    a.download = 'registro';
+    a.click();
+}
+
+function whatsapp() {
+    if (!finalBlob) return alert('Gere um arquivo primeiro');
+    const text = encodeURIComponent('Registrei esse momento 💖');
+    window.open('https://wa.me/?text=' + text, '_blank');
+}
+</script>
+
+</body>
+</html>
